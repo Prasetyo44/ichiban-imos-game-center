@@ -203,9 +203,11 @@ async function showNewQr(screenId) {
   if (!s) return;
   clearTimeout(s.timer);
   if (s.token) tokens.delete(s.token);
+  const roundEnded = !!s.playId; // ada pemain sebelumnya = satu permainan selesai / batal
   s.token = uid(6);
   s.state = 'qr';
   s.playId = null;
+  if (roundEnded && opts.onRoundEnd) opts.onRoundEnd(screenId);
   tokens.set(s.token, screenId);
   const url = `${BASE_URL}/play?t=${s.token}`;
   const qr = await QRCode.toDataURL(url, { margin: 1, width: 600 });

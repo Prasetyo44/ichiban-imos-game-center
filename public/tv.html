@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ichiban Game Center TV</title>
+<link rel="icon" href="img/can-aerosol.png">
+<style>
+  :root { --primary: #d71920; --accent: #ffc400; --bg: #07080f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #fff; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; cursor: none; }
+  .hidden { display: none !important; }
+  iframe { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; background: #000; }
+
+  /* Layar Game Center */
+  #home { position: fixed; inset: 0; display: flex; flex-direction: column; padding: 5vh 4vw 4vh;
+          background: radial-gradient(120vw 70vh at 85% -10%, rgba(215,25,32,.45), transparent 60%), radial-gradient(90vw 60vh at -10% 115%, rgba(255,196,0,.16), transparent 60%), var(--bg); }
+  .head { display: flex; align-items: center; gap: 2vw; }
+  .cans { display: flex; align-items: flex-end; }
+  .cans img { height: 15vh; filter: drop-shadow(0 1.4vh 2vh rgba(0,0,0,.6)); animation: bob 3s ease-in-out infinite; }
+  .cans img + img { height: 12vh; margin-left: -2.2vh; animation-delay: -1.5s; }
+  @keyframes bob { 50% { transform: translateY(-1.2vh) rotate(-2deg); } }
+  .brand small { display: block; font-weight: 800; letter-spacing: .32em; color: var(--accent); font-size: 2.2vh; }
+  .brand h1 { margin: .6vh 0 0; font-size: 10vh; line-height: .92; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.02em; text-shadow: 0 .8vh 0 var(--primary), 0 1.6vh 3vh rgba(0,0,0,.6); }
+  .stripe { height: 1vh; margin: 3.5vh 0; border-radius: .5vh; opacity: .9;
+            background: repeating-linear-gradient(-45deg, var(--primary) 0 3vh, transparent 3vh 4.2vh, var(--accent) 4.2vh 7.2vh, transparent 7.2vh 8.4vh); background-size: 200% 100%; animation: slide 6s linear infinite; }
+  @keyframes slide { to { background-position: -16.8vh 0; } }
+  .tiles { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2vw; min-height: 0; }
+  .tile { position: relative; border-radius: 2.2vh; overflow: hidden; background: #12152a; border: .3vh solid rgba(255,255,255,.08); display: flex; flex-direction: column; box-shadow: 0 2vh 5vh rgba(0,0,0,.45); }
+  .tile .img { flex: 1; background: #000 center / cover no-repeat; border-bottom: .8vh solid var(--c); min-height: 0; }
+  .tile .t { padding: 2.2vh 1.4vw 2.6vh; }
+  .tile b { display: block; font-size: 3.6vh; font-weight: 900; font-style: italic; text-transform: uppercase; line-height: 1; }
+  .tile span { display: block; margin-top: .9vh; color: var(--c); font-weight: 800; font-size: 2.2vh; }
+  .tile .n { position: absolute; left: 1.4vh; top: 1vh; font-size: 5vh; font-weight: 900; font-style: italic; text-shadow: 0 .5vh 0 var(--c), 0 .6vh 1.4vh rgba(0,0,0,.6); }
+  .tile.glow { animation: glow 8s infinite; }
+  @keyframes glow { 0%, 20%, 100% { border-color: rgba(255,255,255,.08); transform: none; } 8% { border-color: var(--c); transform: translateY(-1vh); } }
+  .cta { margin-top: 3.5vh; text-align: center; font-size: 4.4vh; font-weight: 900; font-style: italic; text-transform: uppercase; color: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+  .cta small { display: block; font-size: 2.2vh; font-style: normal; font-weight: 600; color: rgba(255,255,255,.7); text-transform: none; margin-top: .6vh; animation: none; }
+  @keyframes pulse { 50% { opacity: .55; } }
+
+  /* Transisi */
+  #splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 5;
+            background: radial-gradient(80vw 80vh at 50% 50%, color-mix(in srgb, var(--c, #d71920) 55%, transparent), transparent 70%), #07080f; }
+  #splash small { font-size: 3vh; font-weight: 800; letter-spacing: .3em; color: var(--accent); }
+  #splash b { font-size: 13vh; font-weight: 900; font-style: italic; text-transform: uppercase; line-height: .95; margin-top: 2vh; text-shadow: 0 1vh 0 var(--c, #d71920); animation: zoom .6s cubic-bezier(.2, 1.4, .4, 1); }
+  #splash span { margin-top: 3vh; font-size: 3vh; opacity: .8; }
+  @keyframes zoom { from { transform: scale(.6); opacity: 0; } }
+
+  #soundHint { position: fixed; right: 2vh; bottom: 2vh; z-index: 9; background: var(--primary); color: #fff; font-weight: 800; font-size: 1.8vh; padding: 1vh 1.6vh; border-radius: 99px; cursor: pointer; }
+  #conn { position: fixed; left: 2vh; bottom: 1.4vh; z-index: 9; font-size: 1.4vh; opacity: .45; }
+</style>
+</head>
+<body>
+<div id="home">
+  <div class="head">
+    <div class="cans"><img src="img/can-aerosol.png" alt=""><img src="img/can-nc.png" alt=""></div>
+    <div class="brand"><small>IMOS · ICHIBAN PAINT MOTOBUILT</small><h1>Ichiban Game Center</h1></div>
+  </div>
+  <div class="stripe"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="cta">Mau main? Tanya panitia!<small>Pilih game favoritmu, scan QR, dan menangkan hadiahnya</small></div>
+</div>
+
+<div id="splash" class="hidden"><small id="spTop">GAME BERIKUTNYA</small><b id="spName"></b><span id="spSub"></span></div>
+<iframe id="game" class="hidden" allow="autoplay; fullscreen; accelerometer; gyroscope" title="Game"></iframe>
+<div id="soundHint" class="hidden">🔊 Klik sekali di layar untuk mengaktifkan suara</div>
+<div id="conn">menghubungkan…</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const socket = io();
+  const frame = $('game');
+  let apps = [], current = null, soundOk = false, splashT = null;
+
+  // ---- Suara: browser butuh satu klik/tap sebelum suara boleh diputar ----
+  function checkSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      soundOk = ctx.state === 'running'; ctx.close();
+    } catch { soundOk = false; }
+    if (navigator.userActivation && navigator.userActivation.hasBeenActive) soundOk = true;
+    $('soundHint').classList.toggle('hidden', soundOk);
+  }
+  addEventListener('pointerdown', () => { soundOk = true; $('soundHint').classList.add('hidden'); unlockFrame(); });
+  addEventListener('keydown', () => { soundOk = true; $('soundHint').classList.add('hidden'); unlockFrame(); });
+  checkSound();
+
+  // Di dalam layar game: aktifkan suara & sembunyikan tombol kecil (layar penuh dll.)
+  function unlockFrame() {
+    let d; try { d = frame.contentDocument; } catch { return; }
+    if (!d || !d.body || !current) return;
+    if (soundOk) {
+      const b = d.getElementById('soundBtn');
+      if (b && !b.dataset.hubClicked) { b.dataset.hubClicked = '1'; try { b.click(); } catch {} }
+      if (!d.getElementById('hubStyle')) {
+        const st = d.createElement('style'); st.id = 'hubStyle';
+        st.textContent = '.tools, #tools, #fsBtn { display: none !important; } html, body { cursor: none; }';
+        d.head.appendChild(st);
+      }
+    }
+  }
+  frame.addEventListener('load', () => { unlockFrame(); setTimeout(unlockFrame, 800); });
+
+  function renderTiles() {
+    $('tiles').innerHTML = '';
+    apps.forEach((a, i) => {
+      const el = document.createElement('div');
+      el.className = 'tile glow';
+      el.style.setProperty('--c', a.color);
+      el.style.animationDelay = (i * 2) + 's';
+      el.innerHTML = `<div class="img" style="background-image:url('img/card-${a.slug}.jpg')"></div><div class="t"><b></b><span></span></div><div class="n">0${i + 1}</div>`;
+      el.querySelector('b').textContent = a.name;
+      el.querySelector('span').textContent = a.tagline;
+      $('tiles').appendChild(el);
+    });
+  }
+
+  function splash(top, name, sub, color, ms) {
+    clearTimeout(splashT);
+    $('spTop').textContent = top; $('spName').textContent = name; $('spSub').textContent = sub || '';
+    $('splash').style.setProperty('--c', color || '#d71920');
+    $('splash').classList.remove('hidden');
+    return new Promise((r) => { splashT = setTimeout(() => { $('splash').classList.add('hidden'); r(); }, ms); });
+  }
+
+  async function apply(st) {
+    if (st.apps) { const changed = JSON.stringify(st.apps) !== JSON.stringify(apps); apps = st.apps; if (changed) renderTiles(); }
+    const next = st.active || null;
+    if (next === current) return;
+    const prev = current;
+    current = next;
+    if (next) {
+      const a = apps.find((x) => x.slug === next);
+      frame.src = 'about:blank';
+      await splash('GAME BERIKUTNYA', a ? a.name : next, a ? a.tagline : '', a && a.color, 2200);
+      if (current !== next) return;
+      frame.src = '/' + next + '/tv';
+      frame.classList.remove('hidden'); $('home').classList.add('hidden');
+    } else {
+      frame.src = 'about:blank';
+      frame.classList.add('hidden'); $('home').classList.remove('hidden');
+      if (prev && st.reason === 'selesai') await splash('TERIMA KASIH', 'Sudah bermain!', 'Tanya panitia untuk main game lainnya', '#d71920', 3000);
+      else { clearTimeout(splashT); $('splash').classList.add('hidden'); }
+    }
+  }
+
+  socket.on('connect', () => { $('conn').textContent = 'terhubung'; socket.emit('tv:status', {}); });
+  socket.on('disconnect', () => { $('conn').textContent = 'koneksi terputus, menyambung ulang…'; });
+  socket.on('hub:state', apply);
+</script>
+</body>
+</html>
