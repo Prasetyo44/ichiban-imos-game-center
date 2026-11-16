@@ -9,6 +9,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const QRCode = require('qrcode');
+const { Server } = require('socket.io');
+const { spawn } = require('child_process');
 
 // ---------- Konfigurasi ----------
 const CONFIG_FILE = path.join(__dirname, 'config.json');
@@ -29,6 +31,8 @@ function lanAddress() {
   }
   return 'localhost';
 }
+// Buka layar TV otomatis di laptop ini saat server menyala: "kiosk" (layar penuh), "browser", atau "off".
+const OPEN_TV = String(process.env.OPEN_TV || fileCfg.openTvOnStart || 'off').trim().toLowerCase();
 const PUBLIC_URL = (process.env.PUBLIC_URL || fileCfg.publicUrl || `http://${lanAddress()}:${PORT}`).replace(/\/$/, '');
 
 // Daftar game. "slug" = alamat di website (mis. /drag-race).
@@ -61,6 +65,7 @@ for (const a of APPS) {
     baseUrl: PUBLIC_URL + base,
     dataDir: path.join(DATA_ROOT, a.slug),
     adminPassword: process.env[a.env + '_ADMIN_PASSWORD'] || c.adminPassword || DEFAULT_PW,
+    onRoundEnd: () => hubRoundEnd(a.slug),
   });
   root.use(base, inst.app);
   mounted.push({ ...a, base, inst });
@@ -69,6 +74,37 @@ for (const a of APPS) {
 root.use(express.json());
 root.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 root.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+root.get('/tv', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'tv.html')));
+root.get('/remote', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'remote.html')));
+
+// ---------- Game Center: satu TV, admin memilih game dari HP ----------
+// TV membuka /tv (layar Game Center). Panitia membuka /remote di HP, memilih game,
+// lalu TV menampilkan game itu. Setelah satu permainan selesai (hasil sudah tampil)
+// atau dibatalkan panitia, TV otomatis kembali ke layar Game Center.
+const hubIo = new Server(server, { path: '/socket.io', destroyUpgrade: false });
+const hub = { active: null, since: null, reason: null };
+const hubState = () => ({ ...hub, apps: mounted.map(appInfo) });
+function hubSet(active, reason) {
+  hub.active = active; hub.since = Date.now(); hub.reason = reason || null;
+  hubIo.emit('hub:state', hubState());
+}
+function hubRoundEnd(slug) {
+  if (hub.active === slug) setTimeout(() => hub.active === slug && hubSet(null, 'selesai'), 300);
+}
+hubIo.on('connection', (socket) => {
+  socket.emit('hub:state', hubState());
+  socket.emit('hub:tvs', countTvs());
+  socket.on('remote:join', (pw, cb) => { socket.data.ok = pw === SUPER_PW; cb && cb(socket.data.ok); });
+  socket.on('remote:select', (slug, cb) => {
+    if (!socket.data.ok) return cb && cb({ ok: false, error: 'Belum login' });
+    if (slug !== null && !mounted.some((a) => a.slug === slug)) return cb && cb({ ok: false, error: 'Game tidak ditemukan' });
+    hubSet(slug, slug ? 'dipilih' : 'dibatalkan');
+    cb && cb({ ok: true });
+  });
+  socket.on('tv:status', (st) => { socket.data.tv = true; hubIo.emit('hub:tvs', countTvs()); });
+  socket.on('disconnect', () => { if (socket.data.tv) setTimeout(() => hubIo.emit('hub:tvs', countTvs()), 50); });
+});
+function countTvs() { let n = 0; for (const s of hubIo.sockets.sockets.values()) if (s.data.tv) n++; return n; }
 
 const appInfo = (a) => ({
   slug: a.slug, name: a.name, tagline: a.tagline, desc: a.desc, color: a.color, leaderboard: a.leaderboard,
@@ -109,6 +145,8 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('\n=== IMOS · Ichiban Paint Motobuilt — Game Center ===');
   console.log(`Menu semua game : ${PUBLIC_URL}/`);
   console.log(`Super-admin     : ${PUBLIC_URL}/admin   password: ${pwNote(SUPER_PW)}`);
+  console.log(`Game Center TV  : ${PUBLIC_URL}/tv      (1 TV, game dipilih panitia)`);
+  console.log(`Remote panitia  : ${PUBLIC_URL}/remote  (pilih game dari HP)`);
   for (const a of mounted) {
     console.log(`\n  ${a.name}`);
     console.log(`    Layar TV  : ${PUBLIC_URL}${a.base}/tv`);
@@ -116,4 +154,37 @@ server.listen(PORT, '0.0.0.0', () => {
     if (a.leaderboard) console.log(`    Papan skor: ${PUBLIC_URL}${a.base}/leaderboard`);
   }
   console.log('\nPastikan HP peserta terhubung ke Wi-Fi yang sama dengan laptop ini.\n');
+  const remoteUrl = `${PUBLIC_URL}/remote`;
+  QRCode.toString(remoteUrl, { type: 'terminal', small: true }, (err, qr) => {
+    if (!err) console.log(`MODE GAME CENTER (1 TV): buka ${PUBLIC_URL}/tv di laptop yang tersambung ke TV.\nScan QR ini dengan HP panitia untuk memilih game (password super-admin):\n${qr}\n${remoteUrl}\n`);
+    openTv(`http://localhost:${PORT}/tv`);
+  });
 });
+
+// Membuka layar TV di laptop server (yang tersambung HDMI ke TV).
+function openTv(url) {
+  if (OPEN_TV === 'off' || OPEN_TV === 'false' || OPEN_TV === '') return;
+  const kiosk = OPEN_TV === 'kiosk' || OPEN_TV === 'true';
+  const prof = path.join(os.tmpdir(), 'imos-tv-browser');
+  const flags = ['--autoplay-policy=no-user-gesture-required', '--no-first-run', '--disable-session-crashed-bubble', '--disable-features=Translate',
+    '--user-data-dir=' + prof, ...(kiosk ? ['--kiosk'] : ['--start-fullscreen'])];
+  const tryRun = (cmds) => {
+    const [cmd, ...rest] = cmds;
+    if (!cmd) return console.log('Buka layar TV secara manual: ' + url);
+    const p = spawn(cmd[0], cmd.slice(1), { detached: true, stdio: 'ignore' });
+    p.on('error', () => tryRun(rest));
+    p.unref();
+  };
+  console.log(`Membuka layar TV${kiosk ? ' (layar penuh, tutup dengan Alt+F4)' : ''}: ${url}`);
+  if (process.platform === 'win32') {
+    const pf = [process.env['ProgramFiles(x86)'], process.env.ProgramFiles, process.env.LOCALAPPDATA].filter(Boolean);
+    const exes = [];
+    for (const b of pf) exes.push(path.join(b, 'Microsoft', 'Edge', 'Application', 'msedge.exe'), path.join(b, 'Google', 'Chrome', 'Application', 'chrome.exe'));
+    const found = exes.filter((e) => fs.existsSync(e));
+    tryRun([...found.map((e) => [e, ...(e.includes('msedge') && kiosk ? ['--edge-kiosk-type=fullscreen'] : []), ...flags, url]), ['cmd', '/c', 'start', '', url]]);
+  } else if (process.platform === 'darwin') {
+    tryRun([['open', '-na', 'Google Chrome', '--args', ...flags, url], ['open', url]]);
+  } else {
+    tryRun([['google-chrome', ...flags, url], ['chromium', ...flags, url], ['chromium-browser', ...flags, url], ['xdg-open', url]]);
+  }
+}

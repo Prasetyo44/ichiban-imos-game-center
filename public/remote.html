@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d16">
+<title>Remote Game Center</title>
+<link rel="icon" href="img/can-aerosol.png">
+<style>
+  :root { --primary: #d71920; --accent: #ffc400; --bg: #0b0d16; --card: #151933; --line: rgba(255,255,255,.1); --muted: rgba(255,255,255,.65); --ok: #2bd97c; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: #fff; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 18px 16px 40px; }
+  h1 { margin: 0; font-size: 22px; font-weight: 900; font-style: italic; text-transform: uppercase; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .hidden { display: none !important; }
+  .login { margin-top: 12vh; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+  .login p { color: var(--muted); font-size: 14px; margin: 4px 0 14px; }
+  input { width: 100%; padding: 13px 14px; border-radius: 10px; border: 1px solid var(--line); background: #0b0d16; color: #fff; font-size: 16px; }
+  .btn { display: block; width: 100%; margin-top: 12px; padding: 14px; border: 0; border-radius: 12px; background: var(--primary); color: #fff; font-weight: 800; font-size: 16px; cursor: pointer; text-align: center; text-decoration: none; }
+  .err { color: #ff6b6b; font-size: 14px; min-height: 20px; margin-top: 8px; }
+
+  .now { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-left: 6px solid var(--c, #555); border-radius: 14px; padding: 14px 16px; }
+  .now small { color: var(--muted); font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+  .now b { display: block; font-size: 24px; font-weight: 900; font-style: italic; text-transform: uppercase; margin-top: 2px; }
+  .now .tv { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #777; margin-right: 6px; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .nowlinks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .nowlinks a { text-decoration: none; text-align: center; font-weight: 800; font-size: 14px; padding: 11px 8px; border-radius: 10px; background: rgba(255,255,255,.08); border: 1px solid var(--line); color: #fff; }
+  .home { background: transparent; border: 2px solid var(--primary); color: #fff; }
+
+  h2 { font-size: 15px; margin: 22px 0 10px; color: var(--muted); font-weight: 700; }
+  .games { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .g { position: relative; border: 2px solid transparent; border-radius: 14px; overflow: hidden; background: var(--card); cursor: pointer; padding: 0; color: #fff; text-align: left; font: inherit; }
+  .g .img { aspect-ratio: 16 / 9; background: #000 center / cover no-repeat; border-bottom: 4px solid var(--c); }
+  .g .t { padding: 10px 10px 12px; }
+  .g b { display: block; font-size: 15px; font-weight: 900; font-style: italic; text-transform: uppercase; line-height: 1.1; }
+  .g span { display: block; font-size: 12px; color: var(--c); font-weight: 700; margin-top: 3px; }
+  .g.active { border-color: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 35%, transparent); }
+  .g.active::after { content: 'DI TV'; position: absolute; top: 8px; right: 8px; background: var(--c); color: #111; font-weight: 900; font-size: 11px; padding: 3px 7px; border-radius: 6px; }
+  .g:active { transform: scale(.98); }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: #fff; color: #111; font-weight: 700; padding: 12px 16px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.4); font-size: 14px; max-width: calc(100% - 32px); text-align: center; z-index: 9; }
+  .note { margin-top: 22px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+  .note a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Remote <span>Game Center</span></h1>
+  <div class="sub">Pilih game yang tampil di TV · IMOS Ichiban Paint Motobuilt</div>
+
+  <form class="login hidden" id="login">
+    <b>Masuk panitia</b>
+    <p>Pakai password super-admin (lihat <code>config.json</code>).</p>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn">Masuk</button>
+    <div class="err" id="err"></div>
+  </form>
+
+  <div id="main" class="hidden">
+    <div class="now" id="now">
+      <small>Di TV sekarang</small>
+      <b id="nowName">–</b>
+      <div class="tv" id="tvs"><span class="dot"></span>Mengecek TV…</div>
+      <div class="nowlinks hidden" id="nowLinks">
+        <a id="lnAdmin" target="_blank">⚙️ Admin game ini</a>
+        <a id="lnBoard" target="_blank">🏆 Papan skor</a>
+      </div>
+      <button class="btn home hidden" id="homeBtn">⟲ Batalkan &amp; kembali ke Game Center</button>
+    </div>
+
+    <h2>Pilih game untuk peserta berikutnya</h2>
+    <div class="games" id="games"></div>
+
+    <div class="note">
+      Setelah peserta selesai main (hasil sudah tampil), TV otomatis kembali ke layar Game Center. Selama satu game aktif, game lain tidak tampil di TV.
+      Layar TV dibuka di laptop yang tersambung HDMI: <b id="tvUrl"></b>.<br>
+      <a href="admin">Super-admin</a> · <a href="./">Menu semua game</a>
+    </div>
+  </div>
+</div>
+<div class="toast hidden" id="toast"></div>
+
+<script src="socket.io/socket.io.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const socket = io();
+  let PW = sessionStorage.getItem('hub_admin_pw') || '';
+  let state = { active: null, apps: [] }, authed = false, toastT = null;
+
+  function toast(t) { $('toast').textContent = t; $('toast').classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.add('hidden'), 2800); }
+  function login() {
+    socket.emit('remote:join', PW, (ok) => {
+      authed = ok;
+      $('login').classList.toggle('hidden', ok); $('main').classList.toggle('hidden', !ok);
+      if (!ok) { $('err').textContent = PW ? 'Password salah' : ''; sessionStorage.removeItem('hub_admin_pw'); }
+    });
+  }
+  $('login').addEventListener('submit', (e) => { e.preventDefault(); PW = $('pw').value; sessionStorage.setItem('hub_admin_pw', PW); login(); });
+  socket.on('connect', () => { if (PW) login(); else { $('login').classList.remove('hidden'); } });
+
+  function select(slug) {
+    const cur = state.active && state.apps.find((a) => a.slug === state.active);
+    if (slug === state.active) return toast('Game ini sudah tampil di TV');
+    if (cur && !confirm(`${cur.name} sedang aktif di TV. Batalkan dan ganti?`)) return;
+    socket.emit('remote:select', slug, (r) => { if (!r.ok) toast(r.error || 'Gagal'); });
+  }
+  $('homeBtn').onclick = () => { if (confirm('Batalkan game yang sedang aktif dan kembali ke layar Game Center?')) socket.emit('remote:select', null, () => {}); };
+
+  function render() {
+    const a = state.apps.find((x) => x.slug === state.active);
+    $('now').style.setProperty('--c', a ? a.color : '#555');
+    $('nowName').textContent = a ? a.name : 'Layar Game Center';
+    $('nowLinks').classList.toggle('hidden', !a); $('homeBtn').classList.toggle('hidden', !a);
+    if (a) { $('lnAdmin').href = a.admin; $('lnBoard').href = a.board || a.tv; $('lnBoard').textContent = a.board ? '🏆 Papan skor' : '📺 Layar TV game'; }
+    $('games').innerHTML = '';
+    for (const g of state.apps) {
+      const el = document.createElement('button');
+      el.className = 'g' + (g.slug === state.active ? ' active' : '');
+      el.style.setProperty('--c', g.color);
+      el.innerHTML = `<div class="img" style="background-image:url('img/card-${g.slug}.jpg')"></div><div class="t"><b></b><span></span></div>`;
+      el.querySelector('b').textContent = g.name; el.querySelector('span').textContent = g.tagline;
+      el.onclick = () => select(g.slug);
+      $('games').appendChild(el);
+    }
+    $('tvUrl').textContent = location.origin + '/tv';
+  }
+  socket.on('hub:state', (st) => {
+    const prev = state.active;
+    state = st; render();
+    if (prev && !st.active && st.reason === 'selesai') toast('Permainan selesai, TV kembali ke Game Center');
+    else if (st.active && st.active !== prev) toast((st.apps.find((x) => x.slug === st.active) || {}).name + ' tampil di TV');
+  });
+  socket.on('hub:tvs', (n) => { $('tvs').innerHTML = `<span class="dot ${n ? 'on' : ''}"></span>${n ? n + ' layar TV Game Center terhubung' : 'Layar TV Game Center belum dibuka'}`; });
+</script>
+</body>
+</html>

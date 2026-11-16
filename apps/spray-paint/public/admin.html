@@ -66,6 +66,8 @@
   .zoom { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: grid; place-items: center; z-index: 40; cursor: zoom-out; }
   .zoom img { max-width: 92vw; max-height: 88vh; border-radius: 12px; }
   @media (max-width: 420px) { main { grid-template-columns: 1fr; padding: 12px 12px 90px; } .f { grid-template-columns: 1fr 110px; } .f.wsel { grid-template-columns: 1fr; } }
+  /* HP: admin bisa dibuka dari HP panitia */
+  @media (max-width: 760px) { main { grid-template-columns: minmax(0, 1fr) !important; padding: 12px; } main > section, main > * { min-width: 0; } .desc, p { overflow-wrap: anywhere; } table { display: block; overflow-x: auto; } }
 </style>
 </head>
 <body>

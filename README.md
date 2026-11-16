@@ -13,10 +13,40 @@ Satu website berisi **empat game** event Ichiban:
 - **Halaman depan** (`/`) adalah menu bergaya IMOS untuk memilih game.
 - **Setiap game punya admin sendiri** dengan pengaturan, password, data peserta, papan skor dan ekspor CSV masing-masing. Mengubah pengaturan Drag Race tidak mengubah game lain.
 - **Keempat game bisa jalan bersamaan** di TV yang berbeda (TV 1 Spin Wheel, TV 2 Drag Race, dan seterusnya). Satu game juga boleh dibuka di beberapa TV.
+- **Mode Game Center** (`/tv` + `/remote`): satu TV, panitia memilih game dari HP, TV kembali ke Game Center setelah permainan selesai.
 - **Super-admin** (`/admin`) menampilkan status semua game: layar TV yang aktif, jumlah peserta/permainan, tombol ke admin tiap game, dan QR alamat layar TV.
 - Semua fitur, suara, musik dan gambar dari keempat aplikasi asli tetap ada. Semua berjalan **tanpa internet** lewat Wi-Fi lokal.
 
 ![Menu semua game](screenshots/01-menu-semua-game.png)
+
+---
+
+## 0. Mode Game Center: 1 laptop + 1 TV, game dipilih panitia (disarankan untuk booth)
+
+Susunan yang paling sederhana dan stabil untuk event:
+
+```
+Laptop server ──HDMI──> TV            (layar Game Center)
+      │
+      └── kabel LAN/Wi-Fi ── Router Wi-Fi booth ── HP peserta & HP panitia
+```
+
+1. Sambungkan laptop ke TV lewat HDMI, lalu atur tampilan Windows ke **"Second screen only"** atau **"Duplicate"** (tekan `Win + P`).
+2. Klik dua kali **`MULAI-GAME.bat`**. Layar **Game Center** (`/tv`) otomatis terbuka **layar penuh** di TV, dengan suara sudah aktif. Untuk menutupnya tekan `Alt + F4`.
+3. Jendela server menampilkan **QR Remote**. Panitia scan QR itu dengan HP (tersambung ke Wi-Fi booth), lalu masuk dengan password super-admin. Alamatnya: `http://IP-LAPTOP:3000/remote`.
+4. Di HP panitia, **pilih game**. TV menampilkan "GAME BERIKUTNYA" lalu masuk ke game itu dengan QR untuk peserta. Game lain tidak tampil dan tidak bisa dimainkan.
+5. Setelah peserta selesai dan **hasilnya sudah tampil**, TV **otomatis kembali** ke layar Game Center ("Terima kasih sudah bermain!"). Kalau peserta batal, tidak jadi main sampai batas waktu habis, atau panitia menekan **"Batalkan & kembali ke Game Center"**, TV juga kembali.
+6. Pengaturan tiap game (hadiah, tingkat kesulitan, suara, dll.) tetap lewat admin game masing-masing. Di Remote ada tombol **"Admin game ini"** untuk game yang sedang aktif.
+
+| Layar Game Center di TV | Remote panitia di HP |
+|---|---|
+| ![](screenshots/17-tv-game-center.png) | ![](screenshots/18-remote-panitia.png) |
+
+Catatan:
+- Lama hasil tampil sebelum kembali ke Game Center mengikuti pengaturan "lama hasil tampil" di admin tiap game.
+- Kalau layar tidak terbuka otomatis, buka `http://localhost:3000/tv` di Chrome/Edge lalu tekan F11, dan klik sekali di layar supaya suara aktif.
+- `openTvOnStart` di `config.json`: `"kiosk"` (layar penuh otomatis, bawaan), `"browser"` (jendela biasa), atau `"off"` (tidak membuka apa-apa).
+- Mode banyak TV di bawah tetap bisa dipakai kapan saja.
 
 ---
 
@@ -91,6 +121,7 @@ Semua password ada di file **`config.json`** (buka dengan Notepad):
 ```json
 {
   "port": 3000,
+  "openTvOnStart": "kiosk",
   "publicUrl": "",
   "superAdminPassword": "admin123",
   "apps": {
@@ -103,7 +134,7 @@ Semua password ada di file **`config.json`** (buka dengan Notepad):
 ```
 
 - `adminPassword` di tiap game = password halaman admin game itu. Boleh dibuat berbeda, misalnya supaya crew Drag Race hanya bisa mengatur Drag Race.
-- `superAdminPassword` = password halaman `/admin` (status semua game).
+- `superAdminPassword` = password halaman `/admin` (status semua game) dan **Remote panitia** (`/remote`).
 - **Ganti `admin123` sebelum event**, lalu jalankan ulang server.
 - `"enabled": false` menyembunyikan dan mematikan satu game.
 - `port` = nomor port (bawaan 3000).
@@ -138,7 +169,7 @@ imos-games/
   server.js          server utama (menu, super-admin, memasang keempat game)
   config.json        port & password
   MULAI-GAME.bat     tombol start untuk Windows
-  public/            halaman menu & super-admin
+  public/            menu, super-admin, layar Game Center (tv.html) & remote panitia (remote.html)
   apps/
     spin-wheel/      server.js + public/ (TV, HP, admin)
     ichiban-run/

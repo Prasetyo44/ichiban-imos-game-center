@@ -250,6 +250,8 @@ async function resetScreen(screenId) {
   const s = screens.get(screenId);
   if (!s) return;
   clearTimeout(s.timer); clearTimeout(s.waitTimer);
+  const roundEnded = !!s.race || s.lanes.some((L) => L.playId); // satu balapan selesai / dibatalkan
+  if (roundEnded && opts.onRoundEnd) opts.onRoundEnd(screenId);
   s.state = 'lobby'; s.race = null; s.waitUntil = null; s.graceUsed = false;
   await Promise.all([openLane(screenId, 0), openLane(screenId, 1)]);
   pushLobby(screenId);
