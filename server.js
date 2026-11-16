@@ -140,6 +140,16 @@ root.use((req, res, next) => {
 
 root.use((_req, res) => res.status(404).send('<meta name=viewport content="width=device-width"><body style="font-family:system-ui;background:#0b0d16;color:#fff;text-align:center;padding:15vh 20px"><h1>Halaman tidak ditemukan</h1><p><a style="color:#ffc400" href="/">Kembali ke menu game</a></p>'));
 
+// Kalau server sudah berjalan (mis. jendela lama masih terbuka di belakang), jangan crash:
+// cukup buka lagi layar TV-nya.
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`\nGame Center SUDAH BERJALAN di port ${PORT} (jendela server lama masih aktif).`);
+    console.log('Membuka layar Game Center... Kalau ingin memulai ulang server, tutup dulu jendela server yang lama.\n');
+    openTv(`http://localhost:${PORT}/tv`);
+    setTimeout(() => process.exit(0), 4000);
+  } else { console.error(err); process.exit(1); }
+});
 server.listen(PORT, '0.0.0.0', () => {
   const pwNote = (p) => (p === 'admin123' ? 'admin123 (bawaan, sebaiknya diganti)' : '(dari config.json / env)');
   console.log('\n=== IMOS · Ichiban Paint Motobuilt — Game Center ===');
