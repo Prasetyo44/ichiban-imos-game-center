@@ -69,6 +69,14 @@ Server bisa jalan di salah satu laptop TV, atau di laptop terpisah. Semua TV dan
 
 ---
 
+## 2b. Online di domain sendiri (Cloudflare)
+
+Game bisa dibuka lewat domain Anda, misalnya `https://game.domainanda.com`, memakai **Cloudflare Tunnel** (gratis). Server tetap berjalan di laptop event, otomatis HTTPS, dan HP peserta tidak harus di Wi-Fi yang sama. Isi `publicUrl` di `config.json`, simpan token tunnel di `cloudflare-token.txt`, lalu klik dua kali **`MULAI-ONLINE.bat`**.
+
+Panduan lengkap langkah demi langkah: [`docs/online-cloudflare.md`](docs/online-cloudflare.md).
+
+---
+
 ## 3. Admin tiap game
 
 Setiap game diatur dari halaman admin-nya sendiri, misalnya `http://IP-LAPTOP:3000/drag-race/admin`. Isinya sama dengan aplikasi aslinya:
@@ -137,7 +145,8 @@ data/
 imos-games/
   server.js          server utama (menu, super-admin, memasang keempat game)
   config.json        port & password
-  MULAI-GAME.bat     tombol start untuk Windows
+  MULAI-GAME.bat     tombol start untuk Windows (Wi-Fi lokal)
+  MULAI-ONLINE.bat   tombol start + Cloudflare Tunnel (domain sendiri)
   public/            halaman menu & super-admin
   apps/
     spin-wheel/      server.js + public/ (TV, HP, admin)
