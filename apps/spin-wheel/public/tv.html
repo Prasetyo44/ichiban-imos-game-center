@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spin Wheel - Layar</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { overflow: hidden; }
+  .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 4vw; align-items: center; height: 100vh; padding: 4vh 5vw; }
+  .left .wheel-wrap { width: min(44vw, 86vh); }
+  .right { text-align: center; }
+  .title { font-size: 5vw; font-weight: 900; letter-spacing: -.02em; color: var(--accent2); text-shadow: 0 4px 0 rgba(0,0,0,.3); }
+  .sub { font-size: 1.8vw; opacity: .85; margin-top: 1vh; }
+  .qr { background: #fff; padding: 1.2vw; border-radius: 1.5vw; display: inline-block; margin-top: 3vh; }
+  .qr img { width: min(26vw, 48vh); height: auto; display: block; }
+  .url { font-size: 1vw; opacity: .5; margin-top: 1.5vh; word-break: break-all; }
+  .big { font-size: 3.2vw; font-weight: 800; margin-top: 2vh; }
+  .hint { font-size: 1.6vw; opacity: .8; margin-top: 1.5vh; }
+  .dots::after { content: ''; animation: dots 1.5s steps(4) infinite; }
+  @keyframes dots { 0% { content: '' } 25% { content: '.' } 50% { content: '..' } 75% { content: '...' } }
+  .result { margin-top: 3vh; padding: 3vh 2vw; }
+  .result .label { font-size: 1.8vw; }
+  .result .prize { font-size: 4.5vw; }
+  .pulse { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(1.05); } }
+  .status { position: fixed; bottom: 8px; right: 12px; font-size: 12px; opacity: .4; }
+  .fs { position: fixed; top: 10px; right: 12px; padding: 6px 10px; font-size: 12px; background: rgba(255,255,255,.12); }
+  @media (max-aspect-ratio: 1/1) {
+    .stage { grid-template-columns: 1fr; gap: 2vh; }
+    .left .wheel-wrap { width: min(80vw, 50vh); }
+  }
+</style>
+</head>
+<body>
+<button class="fs" onclick="document.documentElement.requestFullscreen?.()">Layar penuh</button>
+<div class="stage">
+  <div class="left">
+    <div class="wheel-wrap"><div class="pointer"></div><canvas id="wheel"></canvas></div>
+  </div>
+  <div class="right">
+    <div class="title" id="title">Spin &amp; Menang!</div>
+
+    <div id="s-qr">
+      <div class="sub">Scan QR ini dengan HP kamu untuk ikut</div>
+      <div class="qr"><img id="qr" alt="QR code"></div>
+      <div class="url" id="url"></div>
+    </div>
+
+    <div id="s-form" class="hidden">
+      <div class="big dots">Peserta sedang mengisi data</div>
+      <div class="hint">Mohon tunggu sebentar</div>
+    </div>
+
+    <div id="s-ready" class="hidden">
+      <div class="big">Halo, <span id="pname"></span>!</div>
+      <div class="hint pulse">Tekan tombol PUTAR di HP kamu</div>
+    </div>
+
+    <div id="s-spin" class="hidden">
+      <div class="big"><span id="pname2"></span></div>
+      <div class="hint dots">Roda sedang berputar</div>
+      <div class="result hidden" id="result">
+        <div class="label" id="rlabel"></div>
+        <div class="prize" id="rprize"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="status" id="status">menghubungkan…</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script src="wheel.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const wheel = new Wheel($('wheel'));
+  const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io' });
+  function show(id) {
+    for (const s of ['s-qr', 's-form', 's-ready', 's-spin']) $(s).classList.toggle('hidden', s !== id);
+  }
+  socket.on('connect', () => { $('status').textContent = 'terhubung'; socket.emit('screen:hello'); });
+  socket.on('disconnect', () => { $('status').textContent = 'koneksi terputus, mencoba lagi…'; });
+
+  socket.on('screen:qr', ({ qr, url, title, prizes }) => {
+    $('title').textContent = title;
+    $('qr').src = qr;
+    $('url').textContent = url;
+    wheel.setPrizes(prizes);
+    wheel.reset();
+    show('s-qr');
+  });
+  socket.on('prizes', (p) => { if (!wheel.anim) wheel.setPrizes(p); });
+  socket.on('screen:form', () => show('s-form'));
+  socket.on('screen:ready', ({ name, prizes, title }) => {
+    $('title').textContent = title;
+    $('pname').textContent = name;
+    wheel.setPrizes(prizes);
+    wheel.reset();
+    show('s-ready');
+  });
+  socket.on('spin', (d) => {
+    $('pname2').textContent = d.name;
+    $('result').classList.add('hidden');
+    document.querySelector('#s-spin .hint').classList.remove('hidden');
+    show('s-spin');
+    wheel.setPrizes(d.prizes);
+    wheel.spin(d, () => {
+      document.querySelector('#s-spin .hint').classList.add('hidden');
+      $('rlabel').textContent = d.result.isWin ? 'Selamat! Kamu mendapatkan' : 'Hasil putaran';
+      $('rprize').textContent = d.result.name;
+      $('result').classList.remove('hidden');
+      if (d.result.isWin) confetti(document.body, 6000);
+    });
+  });
+</script>
+</body>
+</html>

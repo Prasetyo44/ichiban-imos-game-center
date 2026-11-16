@@ -1,0 +1,14 @@
+{
+  "name": "imos-ichiban-game-center",
+  "version": "1.0.0",
+  "description": "IMOS Ichiban Paint Motobuilt: Spin Wheel, Ichiban Run, Spray Paint Challenge dan Drag Race Reaction dalam satu website",
+  "main": "server.js",
+  "private": true,
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  }
+}

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#111">
+<title>Ichiban Run - Kontrol</title>
+<style>
+  :root { --primary: #d71920; --accent: #ffc400; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff;
+         background: radial-gradient(circle at 50% -10%, #3a3f55, #111320 70%); overscroll-behavior: none; }
+  .hidden { display: none !important; }
+  .wrap { max-width: 460px; margin: 0 auto; padding: 22px 16px 40px; }
+  .title { text-align: center; font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: -.01em; text-shadow: 0 3px 0 var(--primary); margin: 4px 0 16px; }
+  .card { background: #fff; color: #1b1b2f; border-radius: 18px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .card p { color: #666; margin: 0 0 4px; }
+  label { display: block; font-weight: 700; margin: 14px 0 6px; }
+  input { font: inherit; width: 100%; padding: 13px 14px; border-radius: 10px; border: 1px solid #d0d0dc; color: #1b1b2f; background: #fff; font-size: 16px; }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 14px; padding: 15px 20px; font-weight: 800; background: var(--primary); color: #fff; }
+  button:disabled { opacity: .5; }
+  .full { width: 100%; margin-top: 18px; font-size: 19px; }
+  .err { background: #ffe3e8; color: #b0002a; padding: 10px 12px; border-radius: 10px; margin-top: 14px; }
+  .msg { text-align: center; padding: 26px 8px; }
+  .sprites { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+  .sp { border: 3px solid #e4e4ea; border-radius: 14px; padding: 10px 6px; text-align: center; cursor: pointer; background: #fafafa; }
+  .sp img { height: 96px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto 6px; }
+  .sp span { font-size: 12px; font-weight: 700; color: #444; }
+  .sp.on { border-color: var(--primary); background: #fff2f2; }
+  .start { width: 100%; font-size: 30px; padding: 28px; margin-top: 18px; letter-spacing: .06em; box-shadow: 0 7px 0 rgba(0,0,0,.35); }
+  .start:active { transform: translateY(4px); box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+  .howto { margin-top: 16px; line-height: 1.6; color: #ddd; text-align: center; }
+
+  /* Controller: hanya UP & DOWN */
+  #v-ctl { position: fixed; inset: 0; display: flex; flex-direction: column; padding: env(safe-area-inset-top) 12px calc(12px + env(safe-area-inset-bottom)); gap: 12px;
+           user-select: none; -webkit-user-select: none; touch-action: none; background: #111320; }
+  .bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 6px 0; font-weight: 800; }
+  .hearts { font-size: 26px; letter-spacing: 2px; }
+  .score { font-size: 30px; color: var(--accent); }
+  .score small { display: block; font-size: 12px; color: #aaa; text-align: right; font-weight: 600; }
+  .btn { flex: 1; border-radius: 26px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900;
+         font-size: 34px; letter-spacing: .08em; touch-action: none; transition: transform .05s, filter .05s; }
+  .btn .ar { font-size: 96px; line-height: 1; }
+  .btn small { font-size: 15px; font-weight: 700; opacity: .85; letter-spacing: .02em; margin-top: 4px; }
+  #up { background: linear-gradient(180deg, #ff4b4b, var(--primary)); box-shadow: 0 8px 0 #7d0a0e; }
+  #down { background: linear-gradient(180deg, #3f8cff, #1e5fd0); box-shadow: 0 8px 0 #0f3478; }
+  .btn.press { transform: translateY(6px) scale(.98); filter: brightness(1.2); box-shadow: 0 2px 0 rgba(0,0,0,.5) !important; }
+  .count { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.6); font-size: 120px; font-weight: 900; color: var(--accent); pointer-events: none; }
+  .hit { animation: hit .35s; } @keyframes hit { 30% { background: #7a0010; } }
+
+  .res { text-align: center; }
+  .res .big { font-size: 60px; font-weight: 900; color: var(--primary); line-height: 1.05; }
+  .res .rank { display: inline-block; background: var(--accent); color: #3b2a00; font-weight: 900; padding: 8px 16px; border-radius: 99px; margin-top: 12px; font-size: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="main">
+  <div class="title" id="title">ICHIBAN RUN</div>
+  <div id="v-loading" class="msg">Memuat…</div>
+  <div id="v-error" class="card hidden"><div class="msg" id="errText"></div></div>
+
+  <form id="v-form" class="card hidden" autocomplete="on">
+    <p>Isi data kamu, lalu HP ini jadi stik kontrol.</p>
+    <label for="name">Nama</label>
+    <input id="name" required minlength="2" maxlength="40" autocomplete="name">
+    <div id="phoneBox">
+      <label for="phone">Nomor HP</label>
+      <input id="phone" type="tel" inputmode="tel" placeholder="08xxxxxxxxxx" autocomplete="tel">
+    </div>
+    <div id="extraBox" class="hidden">
+      <label for="extra" id="extraLabel"></label>
+      <input id="extra" maxlength="80">
+    </div>
+    <div id="spriteBox" class="hidden">
+      <label>Pilih kaleng jagoanmu</label>
+      <div class="sprites" id="sprites"></div>
+    </div>
+    <div class="err hidden" id="formErr"></div>
+    <button class="full" type="submit" id="submitBtn">Lanjut</button>
+  </form>
+
+  <div id="v-ready" class="hidden">
+    <div class="card msg" style="padding:20px">
+      <div style="font-size:20px">Halo, <b id="pname"></b>!</div>
+      <div style="color:#666;margin-top:6px">Lihat layar besar. Karaktermu: <b id="psprite"></b></div>
+    </div>
+    <button class="start" id="startBtn">MULAI ▶</button>
+    <div class="howto">▲ <b>UP</b> = lompat (tekan lagi di udara jika lompat ganda aktif)<br>▼ <b>DOWN</b> = merunduk / turun cepat</div>
+    <div class="err hidden" id="startErr"></div>
+  </div>
+
+  <div id="v-done" class="card res hidden">
+    <div style="color:#666">Skor kamu</div>
+    <div class="big" id="dscore">0</div>
+    <div style="color:#444;margin-top:6px" id="dstats"></div>
+    <div class="rank" id="drank"></div>
+    <p style="margin-top:16px">Terima kasih sudah bermain! Lihat papan skor di layar.</p>
+  </div>
+</div>
+
+<div id="v-ctl" class="hidden">
+  <div class="bar"><div class="hearts" id="hearts"></div><div class="score"><span id="cscore">0</span><small id="cdist">0 m</small></div></div>
+  <div class="btn" id="up"><div class="ar">▲</div>UP<small>LOMPAT</small></div>
+  <div class="btn" id="down"><div class="ar">▼</div>DOWN<small>MERUNDUK</small></div>
+  <div class="count hidden" id="count"></div>
+</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const token = new URLSearchParams(location.search).get('t') || '';
+  const PKEY = 'run_pid_' + token;
+  let pid = null;
+  try { pid = sessionStorage.getItem(PKEY); } catch {}
+  let chosen = null, maxLives = 3;
+  const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io', transports: ['websocket', 'polling'] });
+
+  function view(id) {
+    for (const v of ['v-loading', 'v-error', 'v-form', 'v-ready', 'v-done']) $(v).classList.toggle('hidden', v !== id);
+    $('v-ctl').classList.toggle('hidden', id !== 'v-ctl');
+    $('main').classList.toggle('hidden', id === 'v-ctl');
+  }
+  function fail(m) { $('errText').textContent = m; view('v-error'); }
+  function applyBranding(b) {
+    if (!b) return;
+    document.documentElement.style.setProperty('--primary', b.primaryColor);
+    document.documentElement.style.setProperty('--accent', b.accentColor);
+    $('title').textContent = b.title; document.title = b.title;
+  }
+  function setHearts(n) { $('hearts').textContent = '❤️'.repeat(Math.max(0, n)) + '🖤'.repeat(Math.max(0, maxLives - n)); }
+
+  function renderSprites(list) {
+    $('sprites').innerHTML = '';
+    list.forEach((s, i) => {
+      const d = document.createElement('div');
+      d.className = 'sp' + (i === 0 ? ' on' : '');
+      d.innerHTML = `<img alt=""><span></span>`;
+      d.querySelector('img').src = s.src; d.querySelector('span').textContent = s.name;
+      d.onclick = () => { chosen = s.id; [...$('sprites').children].forEach((c) => c.classList.remove('on')); d.classList.add('on'); };
+      $('sprites').appendChild(d);
+    });
+    chosen = list[0] && list[0].id;
+  }
+
+  function showDone(r) {
+    $('dscore').textContent = Number(r.score).toLocaleString('id-ID');
+    $('dstats').textContent = `${r.distance} m · ★ ${r.coins}`;
+    $('drank').textContent = r.rank ? `Peringkat #${r.rank}` : 'Skor terbaikmu sebelumnya lebih tinggi';
+    view('v-done');
+  }
+
+  function check() {
+    socket.emit('play:check', { token, pid }, (res) => {
+      applyBranding(res.branding);
+      if (!res.ok) return fail(res.error);
+      if (res.stage === 'form') {
+        $('phoneBox').classList.toggle('hidden', !res.askPhone);
+        $('phone').required = !!res.askPhone;
+        $('extraBox').classList.toggle('hidden', !res.extraFieldLabel);
+        $('extraLabel').textContent = res.extraFieldLabel || '';
+        $('extra').required = !!res.extraFieldLabel;
+        const choose = res.spriteMode === 'choose' && res.branding.sprites.length > 1;
+        $('spriteBox').classList.toggle('hidden', !choose);
+        if (choose) renderSprites(res.branding.sprites);
+        view('v-form');
+      } else if (res.stage === 'ready') { $('pname').textContent = res.name; view('v-ready'); }
+      else if (res.stage === 'controller') { maxLives = res.lives; setHearts(res.lives); view('v-ctl'); }
+      else if (res.stage === 'done') showDone(res.result);
+    });
+  }
+  socket.on('connect', check);
+
+  $('v-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    $('formErr').classList.add('hidden');
+    $('submitBtn').disabled = true;
+    socket.emit('play:register', { token, name: $('name').value, phone: $('phone').value, extra: $('extra').value, spriteId: chosen }, (res) => {
+      $('submitBtn').disabled = false;
+      if (!res.ok) { $('formErr').textContent = res.error; $('formErr').classList.remove('hidden'); return; }
+      pid = res.pid; maxLives = res.lives;
+      try { sessionStorage.setItem(PKEY, pid); } catch {}
+      $('pname').textContent = res.name; $('psprite').textContent = res.sprite;
+      view('v-ready');
+    });
+  });
+
+  $('startBtn').onclick = () => {
+    $('startBtn').disabled = true;
+    socket.emit('play:start', { pid }, (res) => {
+      $('startBtn').disabled = false;
+      if (!res.ok) { $('startErr').textContent = res.error; $('startErr').classList.remove('hidden'); return; }
+      maxLives = res.lives; setHearts(res.lives);
+      view('v-ctl');
+      try { document.documentElement.requestFullscreen?.(); } catch {}
+      let n = res.countdown;
+      if (n > 0) {
+        $('count').classList.remove('hidden'); $('count').textContent = n;
+        const iv = setInterval(() => { n--; if (n <= 0) { clearInterval(iv); $('count').classList.add('hidden'); } else $('count').textContent = n; }, 1000);
+      }
+    });
+  };
+
+  // Tombol UP / DOWN: kirim saat ditekan dan saat dilepas
+  function bindBtn(el, k) {
+    let held = false;
+    const down = (e) => { e.preventDefault(); if (held) return; held = true; el.classList.add('press'); socket.emit('ctl', { pid, k, d: true }); navigator.vibrate && navigator.vibrate(12); };
+    const up = (e) => { e && e.preventDefault(); if (!held) return; held = false; el.classList.remove('press'); socket.emit('ctl', { pid, k, d: false }); };
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    el.addEventListener('pointerleave', up);
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+  bindBtn($('up'), 'up');
+  bindBtn($('down'), 'down');
+  document.addEventListener('touchmove', (e) => { if (!$('v-ctl').classList.contains('hidden')) e.preventDefault(); }, { passive: false });
+
+  socket.on('game:running', () => $('count').classList.add('hidden'));
+  socket.on('game:tick', (d) => { setHearts(d.lives); $('cscore').textContent = Number(d.score).toLocaleString('id-ID'); $('cdist').textContent = d.distance + ' m'; });
+  socket.on('game:hit', (d) => {
+    setHearts(d.lives);
+    navigator.vibrate && navigator.vibrate([80, 40, 80]);
+    $('v-ctl').classList.remove('hit'); void $('v-ctl').offsetWidth; $('v-ctl').classList.add('hit');
+  });
+  socket.on('game:over', (r) => { try { document.exitFullscreen?.(); } catch {} setTimeout(() => showDone(r), 700); });
+  socket.on('screen:lost', () => fail('Layar TV terputus. Silakan scan ulang QR di layar.'));
+  socket.on('branding', applyBranding);
+</script>
+</body>
+</html>

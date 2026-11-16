@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ichiban Run - Admin</title>
+<style>
+  :root { --primary: #d71920; --bg: #f3f4f8; --card: #fff; --text: #1d2030; --muted: #6b6f80; --line: #e3e5ec; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  .hidden { display: none !important; }
+  header { background: #15171f; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 10; flex-wrap: wrap; }
+  header h1 { font-size: 19px; margin: 0; flex: 1; }
+  header h1 span { color: #ffc400; }
+  .links a { color: #cfd3e0; font-size: 13px; margin-right: 12px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+  section { background: var(--card); border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 16px; margin: 0 0 4px; }
+  .desc { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .f { display: grid; grid-template-columns: 1fr 140px; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
+  .f:first-of-type { border-top: 0; }
+  .f label { font-size: 14px; font-weight: 600; }
+  .f label small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  .f.text { grid-template-columns: 1fr; }
+  #f-sprite .f { grid-template-columns: 1fr 280px; }
+  input, select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #cfd2dc; width: 100%; background: #fff; color: var(--text); }
+  input[type=color] { padding: 2px; height: 36px; }
+  input[type=checkbox] { width: 22px; height: 22px; justify-self: end; }
+  button { font: inherit; font-size: 14px; font-weight: 700; border: 0; border-radius: 9px; padding: 9px 14px; cursor: pointer; background: var(--primary); color: #fff; }
+  button.sec { background: #e8eaf1; color: var(--text); }
+  button.dark { background: #2b2f3c; }
+  button.danger { background: #fff; color: #c0002a; border: 1px solid #f0b8c4; }
+  button.sm { padding: 5px 9px; font-size: 12px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .presets button { flex: 1; }
+  .save { position: fixed; right: 18px; bottom: 18px; z-index: 20; box-shadow: 0 6px 20px rgba(0,0,0,.25); padding: 14px 22px; font-size: 16px; }
+  .save.dirty { animation: pulse 1s infinite; } @keyframes pulse { 50% { transform: scale(1.05); } }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1d2030; color: #fff; padding: 10px 16px; border-radius: 10px; z-index: 30; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: #fff; }
+  .tbl { max-height: 460px; overflow: auto; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sprites { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+  .sp { border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+  .sp img { height: 110px; max-width: 100%; object-fit: contain; }
+  .sp input[type=text] { margin: 6px 0; font-size: 12px; }
+  .sp .row { justify-content: center; font-size: 12px; }
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: 12px; font-weight: 700; background: #e8eaf1; }
+  .pill.playing, .pill.countdown { background: #d9f7e4; color: #0d6b35; }
+  .pill.qr { background: #e7efff; color: #234ea3; }
+  .login { max-width: 360px; margin: 14vh auto; background: #fff; padding: 26px; border-radius: 16px; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
+  .login h2 { margin-bottom: 14px; }
+  .warn { font-size: 12px; color: #a35b00; background: #fff4e0; padding: 8px 10px; border-radius: 8px; margin-top: 8px; }
+  .logo-prev { max-height: 60px; display: block; margin: 8px 0; }
+  @media (max-width: 420px) { main { grid-template-columns: 1fr; padding: 12px; } .f { grid-template-columns: 1fr 110px; } }
+</style>
+</head>
+<body>
+<div id="login" class="login">
+  <h2>Admin Ichiban Run</h2>
+  <form id="loginForm"><input id="pw" type="password" placeholder="Password admin" autofocus><button style="width:100%;margin-top:12px">Masuk</button></form>
+  <div id="loginErr" class="warn hidden">Password salah</div>
+</div>
+
+<div id="app" class="hidden">
+<header>
+  <h1>🥫 <span id="hTitle">ICHIBAN RUN</span> · Admin</h1>
+  <div class="links"><a href="tv" target="_blank">Buka layar TV</a><a href="leaderboard" target="_blank">Papan skor</a></div>
+</header>
+<main>
+  <section class="wide">
+    <h2>Status Layar</h2>
+    <p class="desc">Layar TV yang sedang terbuka dan permainan yang berjalan. Link peserta: <b id="baseUrl"></b></p>
+    <div id="screens" class="row"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="dark" id="testBtn">🎮 Main uji coba di layar TV (keyboard ▲/▼)</button>
+      <button class="danger" id="stopBtn">⏹ Hentikan game yang berjalan</button>
+    </div>
+  </section>
+
+  <section id="sec-branding"><h2>Branding</h2><p class="desc">Teks dan warna di layar TV, HP, dan billboard di dalam game.</p>
+    <div id="f-branding"></div>
+    <div class="f text"><label>Logo (opsional, tampil di layar TV & billboard)</label>
+      <img id="logoPrev" class="logo-prev hidden" alt="">
+      <div class="row"><input type="file" id="logoFile" accept="image/*" style="flex:1"><button class="sec sm" id="logoDel">Hapus logo</button></div>
+    </div>
+  </section>
+
+  <section><h2>Nyawa ❤️</h2><p class="desc">Berapa kali peserta boleh menabrak sebelum game over.</p><div id="f-lives"></div></section>
+
+  <section><h2>Kecepatan &amp; Kesulitan</h2>
+    <p class="desc">Pilih preset lalu sesuaikan. Kecepatan dalam piksel/detik (layar 1920 lebar).</p>
+    <div class="row presets"><button class="sec" data-preset="mudah">Mudah</button><button class="sec" data-preset="normal">Normal</button><button class="sec" data-preset="sulit">Sulit</button><button class="sec" data-preset="ekstrem">Ekstrem</button></div>
+    <div id="f-speed" style="margin-top:8px"></div>
+  </section>
+
+  <section><h2>Rintangan</h2><p class="desc">Seberapa sering rintangan muncul. Jeda minimum otomatis dijaga supaya rintangan selalu bisa dilewati.</p><div id="f-obs"></div></section>
+
+  <section><h2>Skor</h2><p class="desc">Skor = jarak (meter) × poin per meter + bintang × poin bintang.</p><div id="f-score"></div>
+    <div class="warn" id="scoreEx"></div>
+  </section>
+
+  <section><h2>Alur Permainan &amp; Peserta</h2><p class="desc">Data yang diminta di HP dan batas main.</p><div id="f-flow"></div></section>
+
+  <section class="wide"><h2>Karakter Kaleng</h2>
+    <p class="desc">Pilih cara karakter ditentukan, aktifkan/nonaktifkan kaleng, atau upload kaleng baru (PNG transparan paling bagus).</p>
+    <div id="f-sprite" style="max-width:520px"></div>
+    <div class="sprites" id="spriteList"></div>
+    <div class="row" style="margin-top:12px"><input id="newSpName" placeholder="Nama kaleng baru" style="max-width:240px"><input type="file" id="newSpFile" accept="image/*" style="max-width:280px"><button id="newSpBtn">Upload kaleng</button></div>
+  </section>
+
+  <section class="wide">
+    <h2>Papan Skor &amp; Data Peserta</h2>
+    <p class="desc">Total permainan: <b id="total">0</b>. Papan skor memakai skor terbaik tiap peserta (per nomor HP).</p>
+    <div class="row" style="margin-bottom:10px">
+      <a id="csvLink"><button>⬇ Ekspor CSV (Excel)</button></a>
+      <button class="danger" id="resetBtn">Reset semua skor</button>
+      <button class="sec" id="resetSettingsBtn">Kembalikan pengaturan default</button>
+    </div>
+    <div class="tbl"><table><thead><tr><th>#</th><th>Waktu</th><th>Nama</th><th>No HP</th><th id="thExtra">Data tambahan</th><th>Kaleng</th><th class="num">Skor</th><th class="num">Jarak</th><th class="num">★</th><th>Peringkat</th><th></th></tr></thead><tbody id="plays"></tbody></table></div>
+  </section>
+</main>
+<button class="save" id="saveBtn">💾 Simpan pengaturan</button>
+</div>
+<div class="toast hidden" id="toast"></div>
+
+<script src="socket.io/socket.io.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let PW = sessionStorage.getItem('run_admin_pw') || '';
+  let state = null, form = {};
+
+  // Definisi kolom pengaturan: [key, label, keterangan, tipe, opsi]
+  const FIELDS = {
+    'f-branding': [
+      ['title', 'Judul game', '', 'text'], ['subtitle', 'Sub-judul', '', 'text'], ['footer', 'Teks footer / tagline', '', 'text'],
+      ['primaryColor', 'Warna utama', '', 'color'], ['accentColor', 'Warna aksen', '', 'color'],
+      ['theme', 'Tema latar', '', 'select', [['siang', 'Siang'], ['senja', 'Senja'], ['malam', 'Malam']]],
+      ['showBillboards', 'Tampilkan billboard brand', 'Papan iklan dengan judul & kaleng di latar game', 'bool'],
+    ],
+    'f-lives': [
+      ['lives', 'Jumlah nyawa awal', '', 'number', 1], ['maxLives', 'Nyawa maksimum', 'Batas jika mengambil hati tambahan', 'number', 1],
+      ['heartChance', 'Peluang hati tambahan (%)', 'Per rintangan. 0 = tidak ada', 'number', 1],
+      ['invincibleSec', 'Kebal setelah tertabrak (detik)', '', 'number', 0.1],
+    ],
+    'f-speed': [
+      ['startSpeed', 'Kecepatan awal', 'piksel/detik', 'number', 10], ['maxSpeed', 'Kecepatan maksimum', '', 'number', 10],
+      ['accel', 'Percepatan', 'tambahan kecepatan per detik', 'number', 1],
+      ['jumpHeight', 'Tinggi lompatan (piksel)', '', 'number', 10], ['gravity', 'Gravitasi', 'makin besar = lompatan makin cepat', 'number', 50],
+      ['doubleJump', 'Lompat ganda', 'Tekan UP lagi di udara', 'bool'], ['playerSize', 'Ukuran kaleng (piksel)', 'tinggi karakter', 'number', 5],
+    ],
+    'f-obs': [
+      ['obsMinGap', 'Jeda minimum (detik)', 'makin kecil = makin sering', 'number', 0.1], ['obsMaxGap', 'Jeda maksimum (detik)', '', 'number', 0.1],
+      ['flyingChance', 'Rintangan terbang (%)', 'Harus MERUNDUK (DOWN)', 'number', 1], ['flyingStartM', 'Rintangan terbang mulai di (meter)', '', 'number', 10],
+      ['doubleObsChance', 'Rintangan ganda (%)', 'Dua rintangan berdempetan', 'number', 1],
+      ['maxDurationSec', 'Batas waktu main (detik)', '0 = tanpa batas, main sampai nyawa habis', 'number', 5],
+    ],
+    'f-score': [
+      ['pointsPerMeter', 'Poin per meter', '', 'number', 0.1], ['coinChance', 'Peluang bintang (%)', '', 'number', 1], ['coinPoints', 'Poin per bintang', '', 'number', 1],
+    ],
+    'f-flow': [
+      ['countdownSec', 'Hitung mundur sebelum mulai (detik)', '', 'number', 1], ['resultHoldSec', 'Lama hasil tampil di TV (detik)', 'lalu QR baru muncul', 'number', 1],
+      ['askPhone', 'Minta nomor HP', '', 'bool'], ['extraFieldLabel', 'Kolom tambahan (opsional)', 'mis. "Nama Bengkel" / "Kota". Kosongkan jika tidak perlu', 'text'],
+      ['playsPerPhone', 'Batas main per nomor HP', '0 = tanpa batas', 'number', 1], ['leaderboardSize', 'Jumlah baris papan skor', '', 'number', 1],
+      ['keyboardOnTv', 'Izinkan keyboard di TV', '▲/▼ atau Spasi untuk uji coba', 'bool'], ['sound', 'Efek suara di TV', '', 'bool'],
+    ],
+    'f-sprite': [
+      ['spriteMode', 'Cara memilih kaleng', '', 'select', [['choose', 'Peserta memilih di HP'], ['fixed', 'Selalu satu kaleng'], ['random', 'Acak']]],
+      ['spriteId', 'Kaleng (jika "Selalu satu kaleng")', '', 'select', []],
+    ],
+  };
+  const PRESETS = {
+    mudah: { startSpeed: 520, maxSpeed: 1000, accel: 6, obsMinGap: 1.3, obsMaxGap: 2.6, flyingChance: 15, flyingStartM: 250, doubleObsChance: 5, lives: 5, jumpHeight: 320 },
+    normal: { startSpeed: 620, maxSpeed: 1450, accel: 12, obsMinGap: 0.9, obsMaxGap: 1.9, flyingChance: 30, flyingStartM: 120, doubleObsChance: 15, lives: 3, jumpHeight: 300 },
+    sulit: { startSpeed: 800, maxSpeed: 1900, accel: 20, obsMinGap: 0.75, obsMaxGap: 1.5, flyingChance: 40, flyingStartM: 50, doubleObsChance: 25, lives: 3, jumpHeight: 300 },
+    ekstrem: { startSpeed: 1000, maxSpeed: 2500, accel: 30, obsMinGap: 0.6, obsMaxGap: 1.2, flyingChance: 45, flyingStartM: 0, doubleObsChance: 35, lives: 2, jumpHeight: 300 },
+  };
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function toast(m) { $('toast').textContent = m; $('toast').classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => $('toast').classList.add('hidden'), 2200); }
+  async function api(method, url, body) {
+    const r = await fetch(url, { method, headers: { 'content-type': 'application/json', 'x-admin-password': PW }, body: body ? JSON.stringify(body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Gagal');
+    return j;
+  }
+
+  function buildForms() {
+    for (const [box, list] of Object.entries(FIELDS)) {
+      $(box).innerHTML = list.map(([k, label, hint, type, opt]) => {
+        let input;
+        if (type === 'bool') input = `<input type="checkbox" data-k="${k}">`;
+        else if (type === 'select') input = `<select data-k="${k}">${(opt || []).map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>`;
+        else if (type === 'color') input = `<input type="color" data-k="${k}">`;
+        else if (type === 'number') input = `<input type="number" step="${opt}" data-k="${k}" data-num="1">`;
+        else input = `<input type="text" data-k="${k}">`;
+        return `<div class="f ${type === 'text' ? 'text' : ''}"><label>${label}${hint ? `<small>${hint}</small>` : ''}</label>${input}</div>`;
+      }).join('');
+    }
+    document.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('input', () => { readForm(); $('saveBtn').classList.add('dirty'); }));
+  }
+  function fillForm(s) {
+    const sel = document.querySelector('[data-k=spriteId]');
+    sel.innerHTML = state.sprites.filter((x) => x.enabled).map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('');
+    document.querySelectorAll('[data-k]').forEach((el) => {
+      const v = s[el.dataset.k];
+      if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? '';
+    });
+    readForm();
+  }
+  function readForm() {
+    form = {};
+    document.querySelectorAll('[data-k]').forEach((el) => {
+      form[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.dataset.num ? Number(el.value) : el.value;
+    });
+    const ex = 100 * form.pointsPerMeter + 4 * form.coinPoints;
+    $('scoreEx').textContent = `Contoh: lari 100 m + ambil 4 bintang = ${Math.floor(ex).toLocaleString('id-ID')} poin`;
+  }
+
+  async function load() {
+    state = await api('GET', 'api/admin/state');
+    $('hTitle').textContent = state.settings.title;
+    $('baseUrl').textContent = state.baseUrl;
+    if (!$('saveBtn').classList.contains('dirty')) fillForm(state.settings);
+    $('logoPrev').classList.toggle('hidden', !state.settings.logo);
+    if (state.settings.logo) $('logoPrev').src = state.settings.logo;
+    $('screens').innerHTML = state.screens.length ? state.screens.map((s, i) => `<span class="pill ${s.state}">TV ${i + 1}: ${({ qr: 'Menunggu scan QR', form: 'Peserta mendaftar', ready: 'Menunggu MULAI', countdown: 'Hitung mundur', playing: 'Sedang main', over: 'Menampilkan hasil' })[s.state]}${s.player ? ' · ' + esc(s.player) : ''}</span>`).join('') : '<span class="pill">Belum ada layar TV terbuka — buka /tv di laptop/TV</span>';
+    renderSprites();
+    renderPlays();
+    $('csvLink').href = 'api/admin/export.csv?pw=' + encodeURIComponent(PW);
+  }
+
+  function renderSprites() {
+    $('spriteList').innerHTML = state.sprites.map((s) => `<div class="sp">
+      <img src="${esc(s.src)}" alt="">
+      <input type="text" value="${esc(s.name)}" data-sp-name="${s.id}">
+      <div class="row"><label><input type="checkbox" style="width:16px;height:16px" data-sp-on="${s.id}" ${s.enabled ? 'checked' : ''}> Aktif</label>
+      ${s.builtin ? '<span class="pill">bawaan</span>' : `<button class="danger sm" data-sp-del="${s.id}">Hapus</button>`}</div></div>`).join('');
+  }
+  function renderPlays() {
+    const lb = new Map(state.leaderboard.map((r) => [r.id, r.rank]));
+    const spName = Object.fromEntries(state.sprites.map((s) => [s.id, s.name]));
+    $('total').textContent = state.totalPlays;
+    $('thExtra').textContent = state.settings.extraFieldLabel || 'Data tambahan';
+    $('plays').innerHTML = state.plays.map((p, i) => `<tr>
+      <td>${i + 1}</td><td>${new Date(p.createdAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</td>
+      <td><b>${esc(p.name)}</b>${p.test ? ' <span class="pill">uji coba</span>' : ''}</td><td>${esc(p.phone)}</td><td>${esc(p.extra)}</td><td>${esc(spName[p.spriteId] || p.spriteId)}</td>
+      <td class="num"><b>${p.score === null ? '<span class="pill">belum selesai</span>' : p.score.toLocaleString('id-ID')}</b></td>
+      <td class="num">${p.distance ?? ''}${p.distance !== null && p.distance !== undefined ? ' m' : ''}</td><td class="num">${p.coins ?? ''}</td>
+      <td>${lb.get(p.id) ? '🏆 #' + lb.get(p.id) : ''}</td>
+      <td><button class="danger sm" data-del="${p.id}">Hapus</button></td></tr>`).join('') || '<tr><td colspan="11" style="color:#888">Belum ada data</td></tr>';
+  }
+
+  document.addEventListener('click', async (e) => {
+    const t = e.target;
+    try {
+      if (t.dataset.preset) {
+        const p = PRESETS[t.dataset.preset];
+        for (const [k, v] of Object.entries(p)) { const el = document.querySelector(`[data-k=${k}]`); if (el) el.value = v; }
+        readForm(); $('saveBtn').classList.add('dirty'); toast('Preset ' + t.textContent + ' dipasang. Klik Simpan.');
+      } else if (t.dataset.del) {
+        if (!confirm('Hapus data permainan ini?')) return;
+        await api('DELETE', 'api/admin/plays/' + t.dataset.del); load();
+      } else if (t.dataset.spDel) {
+        if (!confirm('Hapus kaleng ini?')) return;
+        await api('DELETE', 'api/admin/sprites/' + t.dataset.spDel); load();
+      }
+    } catch (err) { toast(err.message); }
+  });
+  document.addEventListener('change', async (e) => {
+    const t = e.target;
+    try {
+      if (t.dataset.spOn) { await api('PUT', 'api/admin/sprites/' + t.dataset.spOn, { enabled: t.checked }); load(); }
+      if (t.dataset.spName) { await api('PUT', 'api/admin/sprites/' + t.dataset.spName, { name: t.value }); toast('Nama disimpan'); load(); }
+    } catch (err) { toast(err.message); }
+  });
+
+  const fileToDataUrl = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+  $('newSpBtn').onclick = async () => {
+    const f = $('newSpFile').files[0];
+    if (!f) return toast('Pilih file gambar dulu');
+    try { await api('POST', 'api/admin/sprites', { name: $('newSpName').value || f.name.replace(/\.\w+$/, ''), dataUrl: await fileToDataUrl(f) }); $('newSpFile').value = ''; $('newSpName').value = ''; toast('Kaleng ditambahkan'); load(); }
+    catch (err) { toast(err.message); }
+  };
+  $('logoFile').onchange = async () => {
+    const f = $('logoFile').files[0]; if (!f) return;
+    try { await api('POST', 'api/admin/logo', { dataUrl: await fileToDataUrl(f) }); toast('Logo disimpan'); load(); } catch (err) { toast(err.message); }
+  };
+  $('logoDel').onclick = async () => { await api('POST', 'api/admin/logo', {}); toast('Logo dihapus'); load(); };
+
+  $('saveBtn').onclick = async () => {
+    readForm();
+    try { await api('PUT', 'api/admin/settings', form); $('saveBtn').classList.remove('dirty'); toast('Pengaturan disimpan. Berlaku untuk game berikutnya.'); load(); }
+    catch (err) { toast(err.message); }
+  };
+  $('resetBtn').onclick = async () => {
+    if (!confirm('Hapus SEMUA skor dan data peserta? Ekspor CSV dulu kalau perlu.')) return;
+    await api('POST', 'api/admin/reset'); toast('Semua skor dihapus'); load();
+  };
+  $('resetSettingsBtn').onclick = async () => {
+    if (!confirm('Kembalikan semua pengaturan ke default?')) return;
+    await api('POST', 'api/admin/settings/reset'); $('saveBtn').classList.remove('dirty'); toast('Pengaturan default dipulihkan'); load();
+  };
+  $('stopBtn').onclick = async () => { await api('POST', 'api/admin/stop'); toast('Game dihentikan'); };
+  $('testBtn').onclick = async () => {
+    try { await api('POST', 'api/admin/test-game'); toast('Uji coba dimulai di layar TV. Pakai tombol ▲/▼ di keyboard laptop TV.'); load(); }
+    catch (err) { toast(err.message); }
+  };
+
+  function enter() {
+    const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io' });
+    socket.on('connect', () => socket.emit('admin:join', PW, (ok) => {
+      if (!ok) { socket.disconnect(); $('login').classList.remove('hidden'); $('app').classList.add('hidden'); $('loginErr').classList.remove('hidden'); return; }
+      $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+      load();
+    }));
+    socket.on('admin:refresh', () => load().catch(() => {}));
+  }
+  $('loginForm').onsubmit = (e) => { e.preventDefault(); PW = $('pw').value; sessionStorage.setItem('run_admin_pw', PW); enter(); };
+  buildForms();
+  if (PW) enter();
+</script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ichiban Drag Race - Admin</title>
+<style>
+  :root { --primary: #d71920; --bg: #f3f4f8; --card: #fff; --text: #1d2030; --muted: #6b6f80; --line: #e3e5ec; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  .hidden { display: none !important; }
+  header { background: #15171f; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 10; flex-wrap: wrap; }
+  header h1 { font-size: 19px; margin: 0; flex: 1; }
+  header h1 span { color: #ffc400; }
+  .links a { color: #cfd3e0; font-size: 13px; margin-right: 12px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+  section { background: var(--card); border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 16px; margin: 0 0 4px; }
+  .desc { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .f { display: grid; grid-template-columns: 1fr 140px; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
+  .f:first-of-type { border-top: 0; }
+  .f label { font-size: 14px; font-weight: 600; }
+  .f label small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  .f.text { grid-template-columns: 1fr; }
+  #f-sprite .f { grid-template-columns: 1fr 280px; }
+  input, select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #cfd2dc; width: 100%; background: #fff; color: var(--text); }
+  input[type=color] { padding: 2px; height: 36px; }
+  input[type=checkbox] { width: 22px; height: 22px; justify-self: end; }
+  button { font: inherit; font-size: 14px; font-weight: 700; border: 0; border-radius: 9px; padding: 9px 14px; cursor: pointer; background: var(--primary); color: #fff; }
+  button.sec { background: #e8eaf1; color: var(--text); }
+  button.dark { background: #2b2f3c; }
+  button.danger { background: #fff; color: #c0002a; border: 1px solid #f0b8c4; }
+  button.sm { padding: 5px 9px; font-size: 12px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .presets button { flex: 1; }
+  .save { position: fixed; right: 18px; bottom: 18px; z-index: 20; box-shadow: 0 6px 20px rgba(0,0,0,.25); padding: 14px 22px; font-size: 16px; }
+  .save.dirty { animation: pulse 1s infinite; } @keyframes pulse { 50% { transform: scale(1.05); } }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1d2030; color: #fff; padding: 10px 16px; border-radius: 10px; z-index: 30; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: #fff; }
+  .tbl { max-height: 460px; overflow: auto; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sprites { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+  .sp { border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+  .sp img { height: 110px; max-width: 100%; object-fit: contain; }
+  .sp input[type=text] { margin: 6px 0; font-size: 12px; }
+  .sp .row { justify-content: center; font-size: 12px; }
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: 12px; font-weight: 700; background: #e8eaf1; }
+  .pill.race { background: #d9f7e4; color: #0d6b35; }
+  .pill.lobby { background: #e7efff; color: #234ea3; }
+  .pill.over { background: #fff4e0; color: #8a4b00; }
+  .chip { display:inline-block; font-size:11px; font-weight:800; padding:1px 6px; border-radius:99px; margin-right:2px; }
+  .chip.perfect{background:#c8f7da}.chip.bagus{background:#fff0b3}.chip.cepat{background:#ffe0c2}.chip.telat{background:#ffd0d6}
+  audio { width: 100%; margin-top: 6px; }
+  .login { max-width: 360px; margin: 14vh auto; background: #fff; padding: 26px; border-radius: 16px; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
+  .login h2 { margin-bottom: 14px; }
+  .warn { font-size: 12px; color: #a35b00; background: #fff4e0; padding: 8px 10px; border-radius: 8px; margin-top: 8px; }
+  .logo-prev { max-height: 60px; display: block; margin: 8px 0; }
+  @media (max-width: 420px) { main { grid-template-columns: 1fr; padding: 12px; } .f { grid-template-columns: 1fr 110px; } }
+</style>
+</head>
+<body>
+<div id="login" class="login">
+  <h2>Admin Ichiban Drag Race</h2>
+  <form id="loginForm"><input id="pw" type="password" placeholder="Password admin" autofocus><button style="width:100%;margin-top:12px">Masuk</button></form>
+  <div id="loginErr" class="warn hidden">Password salah</div>
+</div>
+
+<div id="app" class="hidden">
+<header>
+  <h1>🏁 <span id="hTitle">ICHIBAN DRAG RACE</span> · Admin</h1>
+  <div class="links"><a href="tv" target="_blank">Buka layar TV</a><a href="leaderboard" target="_blank">Papan skor</a></div>
+</header>
+<main>
+  <section class="wide">
+    <h2>Status Layar</h2>
+    <p class="desc">Layar TV yang sedang terbuka dan balapan yang berjalan. Link peserta: <b id="baseUrl"></b></p>
+    <div id="screens" class="row"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="dark" id="testBtn">🏍️🏍️ Uji coba 1 lawan 1 di TV (keyboard A &amp; L)</button>
+      <button class="dark" id="testSoloBtn">🏍️ Uji coba solo (keyboard A / Spasi)</button>
+      <button class="sec" id="forceBtn">▶ Mulai paksa (peserta yang sudah SIAP)</button>
+      <button class="danger" id="stopBtn">⏹ Hentikan / batalkan</button>
+    </div>
+  </section>
+
+  <section id="sec-branding"><h2>Branding</h2><p class="desc">Teks dan warna di layar TV, HP, dan billboard di pinggir lintasan.</p>
+    <div id="f-branding"></div>
+    <div class="f text"><label>Logo (opsional, tampil di layar TV &amp; billboard)</label>
+      <img id="logoPrev" class="logo-prev hidden" alt="">
+      <div class="row"><input type="file" id="logoFile" accept="image/*" style="flex:1"><button class="sec sm" id="logoDel">Hapus logo</button></div>
+    </div>
+  </section>
+
+  <section><h2>Mode Balapan</h2><p class="desc">Duel = dua QR (lajur kiri &amp; kanan), dua HP adu cepat. Solo = satu peserta melawan waktu.</p><div id="f-mode"></div></section>
+
+  <section><h2>Lampu Start 🚦</h2><p class="desc">Urutan: lampu stage → 3 lampu kuning → HIJAU setelah jeda acak. Tap sebelum hijau = false start.</p><div id="f-tree"></div></section>
+
+  <section><h2>Motor, Gigi &amp; Kesulitan</h2>
+    <p class="desc">Pilih preset lalu sesuaikan. Tenaga makin besar = jarum RPM naik makin cepat (makin sulit tepat oper gigi).</p>
+    <div class="row presets"><button class="sec" data-preset="mudah">Mudah</button><button class="sec" data-preset="normal">Normal</button><button class="sec" data-preset="sulit">Sulit</button><button class="sec" data-preset="pro">Pro</button></div>
+    <div id="f-bike" style="margin-top:8px"></div>
+    <div class="warn" id="bestEx"></div>
+  </section>
+
+  <section><h2>Skor</h2><p class="desc">Skor = poin reaksi + poin oper gigi + poin waktu (+ bonus menang saat duel).</p><div id="f-score"></div>
+    <div class="warn" id="scoreEx"></div>
+  </section>
+
+  <section><h2>Alur Permainan &amp; Peserta</h2><p class="desc">Data yang diminta di HP dan batas main.</p><div id="f-flow"></div></section>
+
+  <section><h2>Suara 🔊</h2><p class="desc">Semua suara bawaan tersimpan di aplikasi (jalan tanpa internet). Di TV, klik sekali di layar untuk mengaktifkan suara (aturan browser).</p>
+    <div id="f-sound"></div>
+    <div class="f text"><label>Musik latar<small>Kosong = musik bawaan. Bisa upload MP3/OGG/WAV/M4A (maks 14 MB)</small></label>
+      <audio id="musicPrev" controls preload="none"></audio>
+      <div class="row"><input type="file" id="musicFile" accept="audio/*" style="flex:1"><button class="sec sm" id="musicDel">Pakai musik bawaan</button></div>
+    </div>
+  </section>
+
+  <section class="wide">
+    <h2>Papan Skor &amp; Data Peserta</h2>
+    <p class="desc">Total permainan: <b id="total">0</b>. Papan skor memakai skor terbaik tiap peserta (per nomor HP).</p>
+    <div class="row" style="margin-bottom:10px">
+      <a id="csvLink"><button>⬇ Ekspor CSV (Excel)</button></a>
+      <button class="danger" id="resetBtn">Reset semua skor</button>
+      <button class="sec" id="resetSettingsBtn">Kembalikan pengaturan default</button>
+    </div>
+    <div class="tbl"><table><thead><tr><th>#</th><th>Waktu</th><th>Nama</th><th>No HP</th><th id="thExtra">Data tambahan</th><th class="num">Skor</th><th class="num">Reaksi</th><th class="num">ET</th><th class="num">Total</th><th>Oper gigi</th><th>Hasil</th><th>Peringkat</th><th></th></tr></thead><tbody id="plays"></tbody></table></div>
+  </section>
+</main>
+<button class="save" id="saveBtn">💾 Simpan pengaturan</button>
+</div>
+<div class="toast hidden" id="toast"></div>
+
+<script src="socket.io/socket.io.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let PW = sessionStorage.getItem('drag_admin_pw') || '';
+  let state = null, form = {};
+
+  // Definisi kolom pengaturan: [key, label, keterangan, tipe, opsi]
+  const FIELDS = {
+    'f-branding': [
+      ['title', 'Judul game', '', 'text'], ['subtitle', 'Sub-judul', '', 'text'], ['footer', 'Teks footer / tagline', '', 'text'],
+      ['primaryColor', 'Warna utama', '', 'color'], ['accentColor', 'Warna aksen', '', 'color'],
+      ['lane1Name', 'Nama lajur 1', '', 'text'], ['lane1Color', 'Warna motor lajur 1', '', 'color'],
+      ['lane2Name', 'Nama lajur 2', '', 'text'], ['lane2Color', 'Warna motor lajur 2', '', 'color'],
+      ['theme', 'Suasana sirkuit', '', 'select', [['siang', 'Siang'], ['senja', 'Senja'], ['malam', 'Malam (lampu sorot)']]],
+      ['showBillboards', 'Tampilkan billboard brand', 'Papan iklan Ichiban di tembok lintasan', 'bool'],
+    ],
+    'f-mode': [
+      ['mode', 'Mode', '', 'select', [['duel', 'Duel 1 lawan 1 (2 HP)'], ['solo', 'Solo (1 HP)']]],
+      ['challengerWaitSec', 'Tunggu penantang (detik)', 'Duel: setelah peserta pertama SIAP. 0 = tunggu terus', 'number', 1],
+      ['allowSoloStart', 'Boleh "Balap sendiri"', 'Duel: peserta bisa langsung balap tanpa menunggu lawan', 'bool'],
+    ],
+    'f-tree': [
+      ['stageSec', 'Lama burnout & stage (detik)', 'sebelum lampu kuning', 'number', 0.1],
+      ['treeType', 'Jenis lampu', '', 'select', [['standar', 'Standar (kuning satu per satu)'], ['pro', 'Pro (3 kuning sekaligus)']]],
+      ['amberMs', 'Jeda tiap lampu kuning (ms)', '', 'number', 50],
+      ['randomMinMs', 'Jeda acak sebelum hijau, min (ms)', 'supaya tidak bisa ditebak', 'number', 50],
+      ['randomMaxMs', 'Jeda acak sebelum hijau, maks (ms)', '', 'number', 50],
+      ['falseStartRule', 'Aturan false start', '', 'select', [['penalti', 'Penalti waktu (tetap balapan)'], ['diskualifikasi', 'Diskualifikasi (skor 0)']]],
+      ['falseStartPenaltySec', 'Penalti false start (detik)', 'motor jalan otomatis setelah hijau + penalti', 'number', 0.1],
+      ['autoLaunchSec', 'Jalan otomatis jika tidak tap (detik)', 'setelah lampu hijau', 'number', 0.5],
+      ['treeOnPhone', 'Tampilkan lampu start di HP', 'Matikan kalau peserta harus melihat layar TV', 'bool'],
+    ],
+    'f-bike': [
+      ['trackM', 'Panjang lintasan (meter)', '201 = 1/8 mil, 402 = 1/4 mil', 'number', 1],
+      ['gears', 'Jumlah gigi', '2–6', 'number', 1],
+      ['power', 'Tenaga mesin (%)', '100 = normal', 'number', 5],
+      ['topKmh', 'Top speed (km/jam)', '', 'number', 5],
+      ['redline', 'Garis merah RPM', 'angka di takometer', 'number', 500],
+      ['perfectFromPct', 'Zona PERFECT mulai (% RPM)', 'oper gigi di atas angka ini = PERFECT', 'number', 1],
+      ['goodFromPct', 'Zona BAGUS mulai (% RPM)', '', 'number', 1],
+      ['limiterGraceMs', 'Toleransi mentok limiter (ms)', 'lebih dari ini = TELAT', 'number', 10],
+      ['shiftMs', 'Waktu perpindahan gigi (ms)', '', 'number', 10],
+      ['maxRaceSec', 'Batas waktu balapan (detik)', '', 'number', 1],
+    ],
+    'f-score': [
+      ['reactPtsMax', 'Poin reaksi maksimum', 'reaksi 0 detik', 'number', 50], ['reactZeroSec', 'Reaksi yang dapat 0 poin (detik)', '', 'number', 0.1],
+      ['shiftPerfectPts', 'Poin oper gigi PERFECT', '', 'number', 10], ['shiftGoodPts', 'Poin oper gigi BAGUS', '', 'number', 10],
+      ['timePtsMax', 'Poin waktu maksimum', 'didapat jika waktu sama dengan waktu terbaik teoretis', 'number', 100],
+      ['winBonus', 'Bonus menang duel', '', 'number', 50],
+    ],
+    'f-flow': [
+      ['resultHoldSec', 'Lama hasil tampil di TV (detik)', 'lalu QR baru muncul', 'number', 1],
+      ['askPhone', 'Minta nomor HP', '', 'bool'], ['extraFieldLabel', 'Kolom tambahan (opsional)', 'mis. "Nama Bengkel" / "Kota". Kosongkan jika tidak perlu', 'text'],
+      ['playsPerPhone', 'Batas main per nomor HP', '0 = tanpa batas', 'number', 1], ['leaderboardSize', 'Jumlah baris papan skor', '', 'number', 1],
+    ],
+    'f-sound': [
+      ['sound', 'Suara di TV', 'master on/off', 'bool'],
+      ['volMaster', 'Volume utama (%)', '', 'range'], ['volMusic', 'Musik latar (%)', '', 'range'], ['volEngine', 'Suara mesin (%)', '', 'range'],
+      ['volSfx', 'Efek (lampu, oper gigi) (%)', '', 'range'], ['volCrowd', 'Sorakan penonton (%)', '', 'range'],
+      ['musicOn', 'Putar musik latar', '', 'bool'],
+      ['phoneSound', 'Suara di HP peserta', 'mesin & lampu di HP sendiri', 'bool'], ['volPhone', 'Volume HP (%)', '', 'range'],
+    ],
+  };
+  const PRESETS = {
+    mudah: { power: 75, perfectFromPct: 88, goodFromPct: 75, limiterGraceMs: 250, gears: 4, randomMaxMs: 1000, falseStartRule: 'penalti' },
+    normal: { power: 100, perfectFromPct: 92, goodFromPct: 82, limiterGraceMs: 120, gears: 5, randomMaxMs: 1500, falseStartRule: 'penalti' },
+    sulit: { power: 135, perfectFromPct: 94, goodFromPct: 86, limiterGraceMs: 80, gears: 6, randomMaxMs: 2000, falseStartRule: 'penalti' },
+    pro: { power: 170, perfectFromPct: 96, goodFromPct: 90, limiterGraceMs: 50, gears: 6, randomMaxMs: 2500, falseStartRule: 'diskualifikasi' },
+  };
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function toast(m) { $('toast').textContent = m; $('toast').classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => $('toast').classList.add('hidden'), 2200); }
+  async function api(method, url, body) {
+    const r = await fetch(url, { method, headers: { 'content-type': 'application/json', 'x-admin-password': PW }, body: body ? JSON.stringify(body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Gagal');
+    return j;
+  }
+
+  function buildForms() {
+    for (const [box, list] of Object.entries(FIELDS)) {
+      $(box).innerHTML = list.map(([k, label, hint, type, opt]) => {
+        let input;
+        if (type === 'bool') input = `<input type="checkbox" data-k="${k}">`;
+        else if (type === 'select') input = `<select data-k="${k}">${(opt || []).map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>`;
+        else if (type === 'color') input = `<input type="color" data-k="${k}">`;
+        else if (type === 'number') input = `<input type="number" step="${opt}" data-k="${k}" data-num="1">`;
+        else if (type === 'range') input = `<input type="range" min="0" max="100" step="5" data-k="${k}" data-num="1">`;
+        else input = `<input type="text" data-k="${k}">`;
+        return `<div class="f ${type === 'text' ? 'text' : ''}"><label>${label}${hint ? `<small>${hint}</small>` : ''}</label>${input}</div>`;
+      }).join('');
+    }
+    document.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('input', () => { readForm(); $('saveBtn').classList.add('dirty'); }));
+  }
+  function fillForm(s) {
+    document.querySelectorAll('[data-k]').forEach((el) => {
+      const v = s[el.dataset.k];
+      if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? '';
+    });
+    readForm();
+  }
+  function readForm() {
+    form = {};
+    document.querySelectorAll('[data-k]').forEach((el) => {
+      form[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.dataset.num ? Number(el.value) : el.value;
+    });
+    const maxPts = form.reactPtsMax + form.shiftPerfectPts * Math.max(0, form.gears - 1) + form.timePtsMax;
+    $('scoreEx').textContent = `Skor maksimum solo ≈ ${maxPts.toLocaleString('id-ID')} poin (reaksi sempurna, semua oper gigi PERFECT). Poin waktu 0 jika total waktu 1,5× waktu terbaik.`;
+    document.querySelectorAll('input[type=range]').forEach((el) => { el.title = el.value + '%'; });
+  }
+
+  async function load() {
+    state = await api('GET', 'api/admin/state');
+    $('hTitle').textContent = state.settings.title;
+    $('baseUrl').textContent = state.baseUrl;
+    if (!$('saveBtn').classList.contains('dirty')) fillForm(state.settings);
+    $('logoPrev').classList.toggle('hidden', !state.settings.logo);
+    if (state.settings.logo) $('logoPrev').src = state.settings.logo;
+    const ST = { open: 'QR', form: 'mendaftar', joined: 'belum SIAP', ready: 'SIAP', off: '-' };
+    $('screens').innerHTML = state.screens.length ? state.screens.map((s, i) => `<span class="pill ${s.state}">TV ${i + 1}: ${({ lobby: 'Menunggu peserta', race: 'Sedang balapan', over: 'Menampilkan hasil' })[s.state]}
+      ${s.lanes.map((L, k) => L.stage === 'off' ? '' : ` · Lajur ${k + 1}: ${L.name ? esc(L.name) + ' ' : ''}(${ST[L.stage]})`).join('')}</span>`).join('') : '<span class="pill">Belum ada layar TV terbuka — buka /tv di laptop/TV</span>';
+    $('bestEx').textContent = `Waktu terbaik teoretis dengan pengaturan tersimpan: ${state.bestTime.toFixed(3)} detik (reaksi 0, semua oper gigi tepat). Ubah tenaga/top speed/panjang lintasan untuk mengatur lama balapan.`;
+    const mus = state.settings.musicFile || 'sfx/music.mp3';
+    if ($('musicPrev').getAttribute('src') !== mus) $('musicPrev').src = mus;
+    $('musicDel').classList.toggle('hidden', !state.settings.musicFile);
+    renderPlays();
+    $('csvLink').href = 'api/admin/export.csv?pw=' + encodeURIComponent(PW);
+  }
+
+  function renderPlays() {
+    const lb = new Map(state.leaderboard.map((r) => [r.id, r.rank]));
+    $('total').textContent = state.totalPlays;
+    $('thExtra').textContent = state.settings.extraFieldLabel || 'Data tambahan';
+    const n3 = (x) => (x === null || x === undefined ? '' : Number(x).toFixed(3));
+    const GN = { perfect: 'P', bagus: 'B', cepat: 'C', telat: 'T' };
+    $('plays').innerHTML = state.plays.map((p, i) => `<tr>
+      <td>${i + 1}</td><td>${new Date(p.createdAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</td>
+      <td><b>${esc(p.name)}</b>${p.test ? ' <span class="pill">uji coba</span>' : ''}</td><td>${esc(p.phone)}</td><td>${esc(p.extra)}</td>
+      <td class="num"><b>${p.score === null || p.score === undefined ? '<span class="pill">belum balap</span>' : p.score.toLocaleString('id-ID')}</b></td>
+      <td class="num">${p.falseStart ? '<span style="color:#c0002a">FS</span>' : n3(p.rt)}</td><td class="num">${n3(p.et)}</td><td class="num">${n3(p.total)}</td>
+      <td>${(p.shifts || []).map((g) => `<span class="chip ${g}">${GN[g]}</span>`).join('')}</td>
+      <td>${p.dq ? 'DQ' : p.outcome === 'menang' ? '🏆 menang' : p.outcome === 'kalah' ? 'kalah' : p.outcome === 'solo' ? 'solo' : ''}${p.opponent ? ' <small>vs ' + esc(p.opponent) + '</small>' : ''}</td>
+      <td>${lb.get(p.id) ? '🏆 #' + lb.get(p.id) : ''}</td>
+      <td><button class="danger sm" data-del="${p.id}">Hapus</button></td></tr>`).join('') || '<tr><td colspan="13" style="color:#888">Belum ada data</td></tr>';
+  }
+
+  document.addEventListener('click', async (e) => {
+    const t = e.target;
+    try {
+      if (t.dataset.preset) {
+        const p = PRESETS[t.dataset.preset];
+        for (const [k, v] of Object.entries(p)) { const el = document.querySelector(`[data-k=${k}]`); if (el) el.value = v; }
+        readForm(); $('saveBtn').classList.add('dirty'); toast('Preset ' + t.textContent + ' dipasang. Klik Simpan.');
+      } else if (t.dataset.del) {
+        if (!confirm('Hapus data permainan ini?')) return;
+        await api('DELETE', 'api/admin/plays/' + t.dataset.del); load();
+      }
+    } catch (err) { toast(err.message); }
+  });
+  const fileToDataUrl = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+  $('logoFile').onchange = async () => {
+    const f = $('logoFile').files[0]; if (!f) return;
+    try { await api('POST', 'api/admin/logo', { dataUrl: await fileToDataUrl(f) }); toast('Logo disimpan'); load(); } catch (err) { toast(err.message); }
+  };
+  $('logoDel').onclick = async () => { await api('POST', 'api/admin/logo', {}); toast('Logo dihapus'); load(); };
+  $('musicFile').onchange = async () => {
+    const f = $('musicFile').files[0]; if (!f) return;
+    toast('Mengupload musik…');
+    try { await api('POST', 'api/admin/music', { dataUrl: await fileToDataUrl(f) }); $('musicFile').value = ''; toast('Musik disimpan'); load(); } catch (err) { toast(err.message); }
+  };
+  $('musicDel').onclick = async () => { await api('POST', 'api/admin/music', {}); toast('Kembali ke musik bawaan'); load(); };
+
+  $('saveBtn').onclick = async () => {
+    readForm();
+    try { await api('PUT', 'api/admin/settings', form); $('saveBtn').classList.remove('dirty'); toast('Pengaturan disimpan. Berlaku untuk game berikutnya.'); load(); }
+    catch (err) { toast(err.message); }
+  };
+  $('resetBtn').onclick = async () => {
+    if (!confirm('Hapus SEMUA skor dan data peserta? Ekspor CSV dulu kalau perlu.')) return;
+    await api('POST', 'api/admin/reset'); toast('Semua skor dihapus'); load();
+  };
+  $('resetSettingsBtn').onclick = async () => {
+    if (!confirm('Kembalikan semua pengaturan ke default?')) return;
+    await api('POST', 'api/admin/settings/reset'); $('saveBtn').classList.remove('dirty'); toast('Pengaturan default dipulihkan'); load();
+  };
+  $('stopBtn').onclick = async () => { if (!confirm('Hentikan balapan / batalkan peserta yang sedang menunggu?')) return; await api('POST', 'api/admin/stop'); toast('Dihentikan'); };
+  $('testBtn').onclick = async () => {
+    try { await api('POST', 'api/admin/test-race', {}); toast('Uji coba dimulai di layar TV. Lajur kiri: A/Spasi, lajur kanan: L/Enter.'); load(); }
+    catch (err) { toast(err.message); }
+  };
+  $('testSoloBtn').onclick = async () => {
+    try { await api('POST', 'api/admin/test-race', { solo: true }); toast('Uji coba solo dimulai. Tekan A atau Spasi di keyboard TV.'); load(); }
+    catch (err) { toast(err.message); }
+  };
+  $('forceBtn').onclick = async () => { try { await api('POST', 'api/admin/force-start'); toast('Balapan dimulai'); } catch (err) { toast(err.message); } };
+
+  function enter() {
+    const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io' });
+    socket.on('connect', () => socket.emit('admin:join', PW, (ok) => {
+      if (!ok) { socket.disconnect(); $('login').classList.remove('hidden'); $('app').classList.add('hidden'); $('loginErr').classList.remove('hidden'); return; }
+      $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+      load();
+    }));
+    socket.on('admin:refresh', () => load().catch(() => {}));
+  }
+  $('loginForm').onsubmit = (e) => { e.preventDefault(); PW = $('pw').value; sessionStorage.setItem('drag_admin_pw', PW); enter(); };
+  buildForms();
+  if (PW) enter();
+</script>
+</body>
+</html>

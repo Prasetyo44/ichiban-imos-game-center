@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Spin Wheel</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wrap { max-width: 460px; margin: 0 auto; padding: 20px 16px 40px; }
+  .title { text-align: center; font-size: 30px; font-weight: 900; color: var(--accent2); margin: 6px 0 16px; }
+  .card { background: var(--card); color: var(--text); border-radius: 18px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+  .card p { color: var(--muted); margin: 0 0 4px; }
+  .err { background: #ffe3e8; color: #b0002a; padding: 10px 12px; border-radius: 10px; margin-top: 14px; }
+  .full { width: 100%; margin-top: 18px; font-size: 18px; }
+  .hello { text-align: center; font-size: 18px; margin-bottom: 14px; }
+  #spinBtn { width: 100%; margin-top: 22px; font-size: 22px; padding: 18px; letter-spacing: .05em; box-shadow: 0 6px 0 #b0213b; }
+  #spinBtn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 3px 0 #b0213b; }
+  .msg { text-align: center; padding: 30px 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title" id="title">Spin &amp; Menang!</div>
+
+  <div id="v-loading" class="msg">Memuat…</div>
+
+  <div id="v-error" class="card hidden"><div class="msg" id="errText"></div></div>
+
+  <form id="v-form" class="card hidden" autocomplete="on">
+    <p>Isi data diri kamu dulu untuk memutar roda.</p>
+    <label for="name">Nama</label>
+    <input id="name" name="name" required minlength="2" maxlength="60" autocomplete="name">
+    <label for="phone">Nomor HP</label>
+    <input id="phone" name="phone" type="tel" inputmode="tel" required placeholder="08xxxxxxxxxx" autocomplete="tel">
+    <label for="address">Alamat</label>
+    <textarea id="address" name="address" rows="3" required maxlength="200" autocomplete="street-address"></textarea>
+    <div class="err hidden" id="formErr"></div>
+    <button class="full" type="submit" id="submitBtn">Lanjut ke Spin Wheel</button>
+  </form>
+
+  <div id="v-wheel" class="hidden">
+    <div class="hello">Halo, <b id="pname"></b>! Semoga beruntung 🍀</div>
+    <div class="wheel-wrap"><div class="pointer"></div><canvas id="wheel"></canvas></div>
+    <button id="spinBtn">PUTAR!</button>
+    <div class="err hidden" id="spinErr"></div>
+    <div class="result hidden" id="result">
+      <div class="label" id="rlabel"></div>
+      <div class="prize" id="rprize"></div>
+      <div class="label" style="margin-top:8px" id="rnote"></div>
+    </div>
+  </div>
+</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script src="wheel.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const token = new URLSearchParams(location.search).get('t') || '';
+  const PKEY = 'spin_pid_' + token;
+  let pid = null;
+  try { pid = sessionStorage.getItem(PKEY); } catch {}
+  let wheel = null;
+  const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io' });
+
+  function view(id) {
+    for (const v of ['v-loading', 'v-error', 'v-form', 'v-wheel']) $(v).classList.toggle('hidden', v !== id);
+  }
+  function fail(msg) { $('errText').textContent = msg; view('v-error'); }
+
+  function showWheel(name, prizes) {
+    view('v-wheel');
+    $('pname').textContent = name;
+    if (!wheel) wheel = new Wheel($('wheel'));
+    wheel.resize();
+    wheel.setPrizes(prizes);
+  }
+
+  function showResult(r) {
+    $('spinBtn').classList.add('hidden');
+    $('rlabel').textContent = r.isWin ? 'Selamat! Kamu mendapatkan' : 'Hasil putaran kamu';
+    $('rprize').textContent = r.name;
+    $('rnote').textContent = r.isWin ? 'Tunjukkan layar ini ke petugas untuk mengambil hadiah.' : 'Terima kasih sudah ikut!';
+    $('result').classList.remove('hidden');
+  }
+
+  socket.on('connect', () => {
+    socket.emit('play:check', { token, pid }, (res) => {
+      if (res.title) $('title').textContent = res.title;
+      if (!res.ok) return fail(res.error);
+      if (res.stage === 'form') view('v-form');
+      else if (res.stage === 'wheel') showWheel(res.participant.name, res.prizes);
+      else if (res.stage === 'done') { showWheel(res.participant.name, []); showResult(res.result); }
+    });
+  });
+
+  $('v-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    $('formErr').classList.add('hidden');
+    $('submitBtn').disabled = true;
+    socket.emit('play:register', {
+      token, name: $('name').value, phone: $('phone').value, address: $('address').value,
+    }, (res) => {
+      $('submitBtn').disabled = false;
+      if (!res.ok) { $('formErr').textContent = res.error; $('formErr').classList.remove('hidden'); return; }
+      pid = res.pid;
+      try { sessionStorage.setItem(PKEY, pid); } catch {}
+      showWheel(res.participant.name, res.prizes);
+    });
+  });
+
+  $('spinBtn').addEventListener('click', () => {
+    $('spinBtn').disabled = true;
+    $('spinErr').classList.add('hidden');
+    socket.emit('play:spin', { pid }, (res) => {
+      if (!res.ok) { $('spinErr').textContent = res.error; $('spinErr').classList.remove('hidden'); $('spinBtn').disabled = false; }
+    });
+  });
+
+  socket.on('spin', (d) => {
+    $('spinBtn').disabled = true;
+    wheel.setPrizes(d.prizes);
+    wheel.reset();
+    wheel.spin(d, () => {
+      showResult(d.result);
+      if (d.result.isWin) confetti(document.body, 5000);
+    });
+  });
+</script>
+</body>
+</html>

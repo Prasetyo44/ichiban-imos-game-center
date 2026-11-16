@@ -1,0 +1,11 @@
+{
+  "port": 3000,
+  "publicUrl": "",
+  "superAdminPassword": "admin123",
+  "apps": {
+    "spin-wheel":  { "enabled": true, "adminPassword": "admin123" },
+    "ichiban-run": { "enabled": true, "adminPassword": "admin123" },
+    "spray-paint": { "enabled": true, "adminPassword": "admin123" },
+    "drag-race":   { "enabled": true, "adminPassword": "admin123" }
+  }
+}

@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spray Paint Challenge - Admin</title>
+<style>
+  :root { --primary: #d71920; --bg: #f3f4f8; --card: #fff; --text: #1d2030; --muted: #6b6f80; --line: #e3e5ec; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  .hidden { display: none !important; }
+  header { background: #15171f; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 10; flex-wrap: wrap; }
+  header h1 { font-size: 19px; margin: 0; flex: 1; }
+  header h1 span { color: #ffc400; }
+  .links a { color: #cfd3e0; font-size: 13px; margin-right: 12px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 18px 18px 90px; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+  section { background: var(--card); border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); min-width: 0; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 16px; margin: 0 0 4px; }
+  .desc { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .f { display: grid; grid-template-columns: 1fr 140px; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
+  .f:first-of-type { border-top: 0; }
+  .f label { font-size: 14px; font-weight: 600; }
+  .f label small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  .f.text { grid-template-columns: 1fr; }
+  .f.wsel { grid-template-columns: 1fr 240px; }
+  input, select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #cfd2dc; width: 100%; background: #fff; color: var(--text); }
+  input[type=color] { padding: 2px; height: 36px; }
+  input[type=checkbox] { width: 22px; height: 22px; justify-self: end; }
+  input[type=range] { padding: 0; }
+  .rng { display: flex; align-items: center; gap: 8px; } .rng output { width: 38px; text-align: right; font-weight: 700; font-size: 13px; }
+  button { font: inherit; font-size: 14px; font-weight: 700; border: 0; border-radius: 9px; padding: 9px 14px; cursor: pointer; background: var(--primary); color: #fff; }
+  button.sec { background: #e8eaf1; color: var(--text); }
+  button.dark { background: #2b2f3c; }
+  button.danger { background: #fff; color: #c0002a; border: 1px solid #f0b8c4; }
+  button.sm { padding: 5px 9px; font-size: 12px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .presets button { flex: 1; }
+  .save { position: fixed; right: 18px; bottom: 18px; z-index: 20; box-shadow: 0 6px 20px rgba(0,0,0,.25); padding: 14px 22px; font-size: 16px; }
+  .save.dirty { animation: pulse 1s infinite; } @keyframes pulse { 50% { transform: scale(1.05); } }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1d2030; color: #fff; padding: 10px 16px; border-radius: 10px; z-index: 30; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: #fff; z-index: 1; }
+  .tbl { max-height: 520px; overflow: auto; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  td img.th { width: 84px; height: 50px; object-fit: cover; border-radius: 6px; display: block; cursor: zoom-in; background: #eee; }
+  .tpls { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 10px; }
+  .tp { border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+  .tp img { width: 100%; aspect-ratio: 12/7; object-fit: contain; background: #e9ebf0; border-radius: 8px; }
+  .tp input[type=text] { margin: 6px 0; font-size: 12px; }
+  .tp .row { justify-content: center; font-size: 12px; }
+  .pal { display: grid; gap: 6px; }
+  .pal .pc { display: grid; grid-template-columns: 26px 1fr 60px 50px 34px; gap: 8px; align-items: center; }
+  .pal .pc input[type=checkbox] { justify-self: center; width: 18px; height: 18px; }
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: 12px; font-weight: 700; background: #e8eaf1; }
+  .pill.playing, .pill.countdown { background: #d9f7e4; color: #0d6b35; }
+  .pill.qr { background: #e7efff; color: #234ea3; }
+  .g { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; font-weight: 900; font-size: 13px; background: #888; }
+  .g.S { background: #d71920; } .g.A { background: #ff8a00; } .g.B { background: #2e7dd7; } .g.C { background: #6b7280; }
+  .login { max-width: 360px; margin: 14vh auto; background: #fff; padding: 26px; border-radius: 16px; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
+  .login h2 { margin-bottom: 14px; }
+  .warn { font-size: 12px; color: #a35b00; background: #fff4e0; padding: 8px 10px; border-radius: 8px; margin-top: 8px; }
+  .prev { max-height: 60px; display: block; margin: 8px 0; }
+  .sounds button { margin: 3px 0; }
+  .zoom { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: grid; place-items: center; z-index: 40; cursor: zoom-out; }
+  .zoom img { max-width: 92vw; max-height: 88vh; border-radius: 12px; }
+  @media (max-width: 420px) { main { grid-template-columns: 1fr; padding: 12px 12px 90px; } .f { grid-template-columns: 1fr 110px; } .f.wsel { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="login" class="login">
+  <h2>Admin Spray Paint Challenge</h2>
+  <form id="loginForm"><input id="pw" type="password" placeholder="Password admin" autofocus><button style="width:100%;margin-top:12px">Masuk</button></form>
+  <div id="loginErr" class="warn hidden">Password salah</div>
+</div>
+
+<div id="app" class="hidden">
+<header>
+  <h1>🎨 <span id="hTitle">SPRAY PAINT CHALLENGE</span> · Admin</h1>
+  <div class="links"><a href="tv" target="_blank">Buka layar TV</a><a href="leaderboard" target="_blank">Papan skor</a></div>
+</header>
+<main>
+  <section class="wide">
+    <h2>Status Layar</h2>
+    <p class="desc">Layar TV yang sedang terbuka dan permainan yang berjalan. Link peserta: <b id="baseUrl"></b></p>
+    <div id="screens" class="row"></div>
+    <div class="row" style="margin-top:12px">
+      <select id="testTpl" style="max-width:220px"></select>
+      <button class="dark" id="testBtn">🎮 Main uji coba di layar TV (pakai mouse)</button>
+      <button class="danger" id="stopBtn">⏹ Hentikan game yang berjalan</button>
+    </div>
+    <p class="desc" style="margin-top:8px">Uji coba: gerakkan mouse di layar TV untuk membidik, tahan klik untuk menyemprot, tombol 1-9 ganti warna, Enter = selesai.</p>
+  </section>
+
+  <section><h2>Waktu &amp; Semprotan</h2>
+    <p class="desc">Pilih preset tingkat kesulitan lalu sesuaikan bila perlu.</p>
+    <div class="row presets"><button class="sec" data-preset="mudah">Mudah</button><button class="sec" data-preset="normal">Normal</button><button class="sec" data-preset="sulit">Sulit</button><button class="sec" data-preset="ekstrem">Ekstrem</button></div>
+    <div id="f-spray" style="margin-top:8px"></div>
+  </section>
+
+  <section><h2>Skor</h2>
+    <p class="desc">Skor = (% rata × poin penuh) − (% meleber × penalti) − (% meleleh × penalti) + bonus sisa waktu.</p>
+    <div id="f-score"></div>
+    <div class="warn" id="scoreEx"></div>
+  </section>
+
+  <section><h2>Warna Cat 🎨</h2>
+    <p class="desc">Warna yang bisa dipilih peserta di HP (centang = aktif). Kalau hanya 1 warna aktif, pemilih warna disembunyikan.</p>
+    <div class="pal" id="palette"></div>
+    <div class="row" style="margin-top:10px"><button class="sec sm" id="addColor">+ Tambah warna</button></div>
+  </section>
+
+  <section><h2>Suara &amp; Musik 🔊</h2>
+    <p class="desc">Berlaku langsung di layar TV setelah disimpan. Di TV klik sekali tombol "Aktifkan suara" (aturan browser).</p>
+    <div id="f-sound"></div>
+    <div class="f text"><label>Musik latar sendiri (opsional, MP3/OGG/WAV maks 18 MB)<small id="musicNow"></small></label>
+      <div class="row"><input type="file" id="musicFile" accept="audio/*" style="flex:1"><button class="sec sm" id="musicDel">Pakai musik bawaan</button></div>
+    </div>
+    <div class="f text"><label>Coba dengar di komputer ini</label>
+      <div class="row sounds">
+        <button class="sec sm" data-snd="sprayStart">Semprot</button><button class="sec sm" data-snd="rattle">Kocok kaleng</button><button class="sec sm" data-snd="beep">Hitung mundur</button>
+        <button class="sec sm" data-snd="go">Mulai</button><button class="sec sm" data-snd="drip">Meleleh</button><button class="sec sm" data-snd="warn">Meleber</button>
+        <button class="sec sm" data-snd="tick">Detik akhir</button><button class="sec sm" data-snd="finish">Selesai</button><button class="sec sm" data-snd="win">Menang</button><button class="sec sm" data-snd="good">Hasil</button>
+        <button class="sec sm" data-music="musicPlay">▶ Musik main</button><button class="sec sm" data-music="musicIdle">▶ Musik menunggu</button><button class="danger sm" data-music="stop">■ Stop</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="wide"><h2>Template Motor</h2>
+    <p class="desc">Motor/benda yang dicat peserta. Upload template sendiri: <b>gambar motor PNG transparan</b> (area tidak transparan dianggap bisa dicat) atau tambahkan <b>gambar mask</b> hitam-putih (hitam = area cat) supaya roda/jok tidak ikut dihitung.</p>
+    <div id="f-tpl" style="max-width:560px"></div>
+    <div class="tpls" id="tplList"></div>
+    <div class="row" style="margin-top:12px">
+      <input id="newTplName" placeholder="Nama template" style="max-width:200px">
+      <label style="font-size:13px">Gambar motor <input type="file" id="newTplFile" accept="image/*" style="max-width:230px"></label>
+      <label style="font-size:13px">Mask (opsional) <input type="file" id="newTplMask" accept="image/*" style="max-width:230px"></label>
+      <button id="newTplBtn">Upload template</button>
+    </div>
+  </section>
+
+  <section id="sec-branding"><h2>Branding</h2><p class="desc">Teks, warna dan latar di layar TV &amp; HP.</p>
+    <div id="f-branding"></div>
+    <div class="f text"><label>Logo (opsional, tampil di layar TV)</label>
+      <img id="logoPrev" class="prev hidden" alt="">
+      <div class="row"><input type="file" id="logoFile" accept="image/*" style="flex:1"><button class="sec sm" id="logoDel">Hapus logo</button></div>
+    </div>
+    <div class="f text"><label>Gambar kaleng semprot (kursor di TV)<small>Default: Ichiban All-in-One. PNG transparan, posisi tegak.</small></label>
+      <img id="canPrev" class="prev" alt="">
+      <div class="row"><input type="file" id="canFile" accept="image/*" style="flex:1"><button class="sec sm" id="canDel">Pakai kaleng bawaan</button></div>
+    </div>
+  </section>
+
+  <section><h2>Alur Permainan &amp; Peserta</h2><p class="desc">Data yang diminta di HP dan batas main.</p><div id="f-flow"></div></section>
+
+  <section class="wide">
+    <h2>Papan Skor &amp; Data Peserta</h2>
+    <p class="desc">Total permainan: <b id="total">0</b>. Papan skor memakai skor terbaik tiap peserta (per nomor HP). Klik foto untuk memperbesar.</p>
+    <div class="row" style="margin-bottom:10px">
+      <a id="csvLink"><button>⬇ Ekspor CSV (Excel)</button></a>
+      <button class="danger" id="resetBtn">Reset semua skor</button>
+      <button class="sec" id="resetSettingsBtn">Kembalikan pengaturan default</button>
+    </div>
+    <div class="tbl"><table><thead><tr><th>#</th><th>Hasil</th><th>Waktu</th><th>Nama</th><th>No HP</th><th id="thExtra">Data tambahan</th><th>Template</th><th class="num">Skor</th><th>Nilai</th><th class="num">Rata</th><th class="num">Meleber</th><th class="num">Meleleh</th><th>Peringkat</th><th></th></tr></thead><tbody id="plays"></tbody></table></div>
+  </section>
+</main>
+<button class="save" id="saveBtn">💾 Simpan pengaturan</button>
+</div>
+<div class="toast hidden" id="toast"></div>
+<div class="zoom hidden" id="zoom"><img id="zoomImg" alt=""></div>
+
+<script src="socket.io/socket.io.js"></script>
+<script src="audio.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let PW = sessionStorage.getItem('spray_admin_pw') || '';
+  let state = null, form = {}, palette = [];
+  const preview = new SprayAudio();
+
+  // Definisi kolom pengaturan: [key, label, keterangan, tipe, opsi]
+  const FIELDS = {
+    'f-spray': [
+      ['durationSec', 'Waktu mengecat (detik)', '', 'number', 1], ['countdownSec', 'Hitung mundur sebelum mulai (detik)', 'sambil "kocok kaleng"', 'number', 1],
+      ['sprayRadius', 'Lebar semprotan (piksel)', 'jari-jari di layar 1920×1080', 'number', 1],
+      ['sprayPower', 'Kekuatan semprot (%)', 'makin besar = cat cepat menutup, tapi juga cepat meleleh', 'number', 5],
+      ['drips', 'Cat bisa meleleh', 'kalau terlalu lama di satu titik', 'bool'],
+      ['dripLimit', 'Batas tebal sebelum meleleh', '× lapisan cukup. Kecil = lebih cepat meleleh', 'number', 0.1],
+      ['controlMode', 'Cara mengontrol di HP', 'Miring butuh HTTPS; otomatis kembali ke sentuh', 'select', [['pad', 'Sentuh & geser'], ['tilt', 'Miringkan HP (gyro)']]],
+    ],
+    'f-score': [
+      ['pointsCoverage', 'Poin jika 100% rata', '', 'number', 100], ['oversprayPenalty', 'Penalti per 1% meleber', '', 'number', 1],
+      ['dripPenalty', 'Penalti per 1% meleleh', '', 'number', 1], ['timeBonusPerSec', 'Bonus per detik sisa waktu', '', 'number', 1],
+      ['bonusMinCoverage', 'Syarat bonus: tertutup minimal (%)', '', 'number', 1],
+      ['allowFinishEarly', 'Tombol SELESAI di HP', 'peserta bisa selesai cepat untuk bonus waktu', 'bool'],
+      ['autoFinishPct', 'Selesai otomatis saat rata (%)', '0 = tidak', 'number', 1],
+    ],
+    'f-sound': [
+      ['musicOn', 'Musik latar di TV', '', 'bool'], ['musicVolume', 'Volume musik', '', 'range'],
+      ['sfxOn', 'Efek suara di TV', 'semprot, hitung mundur, meleleh, sorakan', 'bool'], ['sfxVolume', 'Volume efek suara', '', 'range'],
+      ['phoneSound', 'Suara desis semprot di HP peserta', '', 'bool'],
+    ],
+    'f-tpl': [
+      ['templateMode', 'Cara memilih template', '', 'select', [['choose', 'Peserta memilih di HP'], ['fixed', 'Selalu satu template'], ['random', 'Acak']]],
+      ['templateId', 'Template (jika "Selalu satu")', '', 'select', []],
+    ],
+    'f-branding': [
+      ['title', 'Judul game', '', 'text'], ['subtitle', 'Sub-judul', '', 'text'], ['footer', 'Teks footer / tagline', '', 'text'],
+      ['primaryColor', 'Warna utama', '', 'color'], ['accentColor', 'Warna aksen', '', 'color'],
+      ['theme', 'Latar booth', '', 'select', [['bengkel', 'Bengkel'], ['showroom', 'Showroom terang'], ['malam', 'Neon malam']]],
+      ['showCans', 'Tampilkan kaleng Ichiban', 'di layar QR & pojok booth', 'bool'],
+    ],
+    'f-flow': [
+      ['resultHoldSec', 'Lama hasil tampil di TV (detik)', 'lalu QR baru muncul', 'number', 1],
+      ['askPhone', 'Minta nomor HP', '', 'bool'], ['extraFieldLabel', 'Kolom tambahan (opsional)', 'mis. "Nama Bengkel" / "Kota". Kosongkan jika tidak perlu', 'text'],
+      ['playsPerPhone', 'Batas main per nomor HP', '0 = tanpa batas', 'number', 1], ['leaderboardSize', 'Jumlah baris papan skor', '', 'number', 1],
+      ['mouseOnTv', 'Izinkan mouse di TV', 'untuk uji coba tanpa HP', 'bool'], ['saveSnapshots', 'Simpan foto hasil cat', 'tampil di papan skor & CSV', 'bool'],
+    ],
+  };
+  const PRESETS = {
+    mudah: { durationSec: 60, sprayRadius: 90, sprayPower: 120, dripLimit: 4.5, oversprayPenalty: 25, dripPenalty: 40 },
+    normal: { durationSec: 45, sprayRadius: 70, sprayPower: 100, dripLimit: 3, oversprayPenalty: 40, dripPenalty: 60 },
+    sulit: { durationSec: 35, sprayRadius: 55, sprayPower: 100, dripLimit: 2.4, oversprayPenalty: 60, dripPenalty: 90 },
+    ekstrem: { durationSec: 25, sprayRadius: 45, sprayPower: 110, dripLimit: 2, oversprayPenalty: 90, dripPenalty: 120 },
+  };
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function toast(m) { $('toast').textContent = m; $('toast').classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => $('toast').classList.add('hidden'), 2400); }
+  async function api(method, url, body) {
+    const r = await fetch(url, { method, headers: { 'content-type': 'application/json', 'x-admin-password': PW }, body: body ? JSON.stringify(body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Gagal (file terlalu besar?)');
+    return j;
+  }
+  const dirty = () => $('saveBtn').classList.add('dirty');
+
+  function buildForms() {
+    for (const [box, list] of Object.entries(FIELDS)) {
+      $(box).innerHTML = list.map(([k, label, hint, type, opt]) => {
+        let input;
+        if (type === 'bool') input = `<input type="checkbox" data-k="${k}">`;
+        else if (type === 'select') input = `<select data-k="${k}">${(opt || []).map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>`;
+        else if (type === 'color') input = `<input type="color" data-k="${k}">`;
+        else if (type === 'number') input = `<input type="number" step="${opt}" data-k="${k}" data-num="1">`;
+        else if (type === 'range') input = `<div class="rng"><input type="range" min="0" max="100" data-k="${k}" data-num="1"><output></output></div>`;
+        else input = `<input type="text" data-k="${k}">`;
+        return `<div class="f ${type === 'text' ? 'text' : type === 'select' ? 'wsel' : ''}"><label>${label}${hint ? `<small>${hint}</small>` : ''}</label>${input}</div>`;
+      }).join('');
+    }
+    document.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('input', () => { readForm(); dirty(); }));
+  }
+  function fillForm(s) {
+    const sel = document.querySelector('[data-k=templateId]');
+    sel.innerHTML = state.templates.filter((x) => x.enabled).map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('');
+    $('testTpl').innerHTML = state.templates.filter((x) => x.enabled).map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('');
+    document.querySelectorAll('[data-k]').forEach((el) => {
+      const v = s[el.dataset.k];
+      if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? '';
+    });
+    palette = state.palette.map((c) => ({ ...c }));
+    renderPalette();
+    readForm();
+  }
+  function readForm() {
+    form = {};
+    document.querySelectorAll('[data-k]').forEach((el) => {
+      form[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.dataset.num ? Number(el.value) : el.value;
+      if (el.type === 'range') el.nextElementSibling.textContent = el.value;
+    });
+    const ex = (85 / 100) * form.pointsCoverage - 6 * form.oversprayPenalty - 2 * form.dripPenalty + 8 * form.timeBonusPerSec;
+    const ex2 = (60 / 100) * form.pointsCoverage - 20 * form.oversprayPenalty - 8 * form.dripPenalty;
+    $('scoreEx').innerHTML = `Contoh rapi: tertutup 87%, meleleh 2%, meleber 6%, selesai sisa 8 detik = <b>${Math.max(0, Math.round(ex + (87 >= form.bonusMinCoverage ? 0 : -8 * form.timeBonusPerSec))).toLocaleString('id-ID')}</b> poin<br>Contoh belepotan: rata 60%, meleleh 8%, meleber 20% = <b>${Math.max(0, Math.round(ex2)).toLocaleString('id-ID')}</b> poin`;
+  }
+
+  function renderPalette() {
+    $('palette').innerHTML = palette.map((c, i) => `<div class="pc"><input type="checkbox" data-pi="${i}" data-pf="enabled" ${c.enabled ? 'checked' : ''} title="Aktif">
+      <input type="text" value="${esc(c.name)}" data-pi="${i}" data-pf="name" maxlength="30"><input type="color" value="${c.hex}" data-pi="${i}" data-pf="hex">
+      <span style="font-size:11px;color:#888">${c.hex}</span><button class="danger sm" data-pdel="${i}" title="Hapus">✕</button></div>`).join('');
+  }
+  $('palette').addEventListener('input', (e) => {
+    const i = e.target.dataset.pi, f = e.target.dataset.pf; if (i === undefined) return;
+    palette[i][f] = f === 'enabled' ? e.target.checked : e.target.value;
+    if (f === 'hex') e.target.nextElementSibling.textContent = e.target.value;
+    dirty();
+  });
+  $('addColor').onclick = () => { if (palette.length >= 16) return toast('Maksimal 16 warna'); palette.push({ id: 'c' + Date.now().toString(36).slice(-6), name: 'Warna baru', hex: '#00a0e9', enabled: true }); renderPalette(); dirty(); };
+
+  async function load() {
+    state = await api('GET', 'api/admin/state');
+    $('hTitle').textContent = state.settings.title;
+    $('baseUrl').textContent = state.baseUrl;
+    if (!$('saveBtn').classList.contains('dirty')) fillForm(state.settings);
+    $('logoPrev').classList.toggle('hidden', !state.settings.logo);
+    if (state.settings.logo) $('logoPrev').src = state.settings.logo;
+    $('canPrev').src = state.settings.canImage || 'img/can-aerosol.png';
+    $('musicNow').textContent = state.settings.music ? 'Sekarang: musik upload (' + state.settings.music.split('/').pop() + ')' : 'Sekarang: musik bawaan';
+    preview.setConfig({ ...state.settings, musicOn: true, sfxOn: true });
+    $('screens').innerHTML = state.screens.length ? state.screens.map((s, i) => `<span class="pill ${s.state}">TV ${i + 1}: ${({ qr: 'Menunggu scan QR', form: 'Peserta mendaftar', ready: 'Menunggu MULAI', countdown: 'Hitung mundur', playing: 'Sedang mengecat', over: 'Menampilkan hasil' })[s.state]}${s.player ? ' · ' + esc(s.player) : ''}</span>`).join('') : '<span class="pill">Belum ada layar TV terbuka — buka /tv di laptop/TV</span>';
+    renderTemplates();
+    renderPlays();
+    $('csvLink').href = 'api/admin/export.csv?pw=' + encodeURIComponent(PW);
+  }
+
+  function renderTemplates() {
+    $('tplList').innerHTML = state.templates.map((s) => `<div class="tp">
+      <img src="${esc(s.src)}" alt="">
+      <input type="text" value="${esc(s.name)}" data-tp-name="${s.id}">
+      <div class="row"><label><input type="checkbox" style="width:16px;height:16px" data-tp-on="${s.id}" ${s.enabled ? 'checked' : ''}> Aktif</label>
+      ${s.builtin ? '<span class="pill">bawaan</span>' : `${s.maskSrc ? '<span class="pill">+ mask</span>' : ''}<button class="danger sm" data-tp-del="${s.id}">Hapus</button>`}</div></div>`).join('');
+  }
+  function renderPlays() {
+    const lb = new Map(state.leaderboard.map((r) => [r.id, r.rank]));
+    const tName = Object.fromEntries(state.templates.map((s) => [s.id, s.name]));
+    $('total').textContent = state.totalPlays;
+    $('thExtra').textContent = state.settings.extraFieldLabel || 'Data tambahan';
+    const pct = (v) => (v === null || v === undefined ? '' : v + '%');
+    $('plays').innerHTML = state.plays.map((p, i) => `<tr>
+      <td>${i + 1}</td><td>${p.snapshot ? `<img class="th" src="${esc(p.snapshot)}" data-zoom="${esc(p.snapshot)}" alt="">` : ''}</td>
+      <td>${new Date(p.createdAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</td>
+      <td><b>${esc(p.name)}</b>${p.test ? ' <span class="pill">uji coba</span>' : ''}</td><td>${esc(p.phone)}</td><td>${esc(p.extra)}</td><td>${esc(tName[p.templateId] || p.templateId)}</td>
+      <td class="num"><b>${p.score === null ? '<span class="pill">belum selesai</span>' : p.score.toLocaleString('id-ID')}</b></td>
+      <td>${p.grade ? `<span class="g ${p.grade}">${p.grade}</span>` : ''}</td>
+      <td class="num">${pct(p.rata)}</td><td class="num">${pct(p.overspray)}</td><td class="num">${pct(p.drip)}</td>
+      <td>${lb.get(p.id) ? '🏆 #' + lb.get(p.id) : ''}</td>
+      <td><button class="danger sm" data-del="${p.id}">Hapus</button></td></tr>`).join('') || '<tr><td colspan="14" style="color:#888">Belum ada data</td></tr>';
+  }
+
+  document.addEventListener('click', async (e) => {
+    const t = e.target;
+    try {
+      if (t.dataset.preset) {
+        const p = PRESETS[t.dataset.preset];
+        for (const [k, v] of Object.entries(p)) { const el = document.querySelector(`[data-k=${k}]`); if (el) el.value = v; }
+        readForm(); dirty(); toast('Preset ' + t.textContent + ' dipasang. Klik Simpan.');
+      } else if (t.dataset.del) {
+        if (!confirm('Hapus data permainan ini?')) return;
+        await api('DELETE', 'api/admin/plays/' + t.dataset.del); load();
+      } else if (t.dataset.tpDel) {
+        if (!confirm('Hapus template ini?')) return;
+        await api('DELETE', 'api/admin/templates/' + t.dataset.tpDel); load();
+      } else if (t.dataset.pdel !== undefined) {
+        if (palette.length <= 1) return toast('Minimal 1 warna');
+        palette.splice(Number(t.dataset.pdel), 1); renderPalette(); dirty();
+      } else if (t.dataset.zoom) {
+        $('zoomImg').src = t.dataset.zoom; $('zoom').classList.remove('hidden');
+      } else if (t.dataset.snd) {
+        preview.unlock(); await preview.load(); preview.play(t.dataset.snd);
+      } else if (t.dataset.music) {
+        preview.unlock(); await preview.load();
+        if (t.dataset.music === 'stop') preview.stopMusic(); else { preview.stopMusic(0.1); setTimeout(() => preview.playMusic(t.dataset.music), 150); }
+      }
+    } catch (err) { toast(err.message); }
+  });
+  $('zoom').onclick = () => $('zoom').classList.add('hidden');
+  document.addEventListener('change', async (e) => {
+    const t = e.target;
+    try {
+      if (t.dataset.tpOn) { await api('PUT', 'api/admin/templates/' + t.dataset.tpOn, { enabled: t.checked }); load(); }
+      if (t.dataset.tpName) { await api('PUT', 'api/admin/templates/' + t.dataset.tpName, { name: t.value }); toast('Nama disimpan'); load(); }
+    } catch (err) { toast(err.message); }
+  });
+
+  const fileToDataUrl = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+  $('newTplBtn').onclick = async () => {
+    const f = $('newTplFile').files[0];
+    if (!f) return toast('Pilih file gambar motor dulu');
+    try {
+      const m = $('newTplMask').files[0];
+      await api('POST', 'api/admin/templates', { name: $('newTplName').value || f.name.replace(/\.\w+$/, ''), dataUrl: await fileToDataUrl(f), maskDataUrl: m ? await fileToDataUrl(m) : '' });
+      $('newTplFile').value = ''; $('newTplMask').value = ''; $('newTplName').value = ''; toast('Template ditambahkan'); load();
+    } catch (err) { toast(err.message); }
+  };
+  const upload = (input, route, msg) => { $(input).onchange = async () => {
+    const f = $(input).files[0]; if (!f) return;
+    try { toast('Mengunggah…'); await api('POST', 'api/admin/' + route, { dataUrl: await fileToDataUrl(f) }); $(input).value = ''; toast(msg); load(); } catch (err) { toast(err.message); }
+  }; };
+  upload('logoFile', 'logo', 'Logo disimpan'); upload('canFile', 'canimage', 'Gambar kaleng disimpan'); upload('musicFile', 'music', 'Musik disimpan, langsung dipakai di TV');
+  $('logoDel').onclick = async () => { await api('POST', 'api/admin/logo', {}); toast('Logo dihapus'); load(); };
+  $('canDel').onclick = async () => { await api('POST', 'api/admin/canimage', {}); toast('Kaleng bawaan dipakai'); load(); };
+  $('musicDel').onclick = async () => { await api('POST', 'api/admin/music', {}); toast('Musik bawaan dipakai'); load(); };
+
+  $('saveBtn').onclick = async () => {
+    readForm();
+    try { await api('PUT', 'api/admin/settings', { ...form, palette }); $('saveBtn').classList.remove('dirty'); toast('Pengaturan disimpan. Berlaku untuk game berikutnya (suara langsung).'); load(); }
+    catch (err) { toast(err.message); }
+  };
+  $('resetBtn').onclick = async () => {
+    if (!confirm('Hapus SEMUA skor, data peserta dan foto hasil? Ekspor CSV dulu kalau perlu.')) return;
+    await api('POST', 'api/admin/reset'); toast('Semua skor dihapus'); load();
+  };
+  $('resetSettingsBtn').onclick = async () => {
+    if (!confirm('Kembalikan semua pengaturan & warna ke default?')) return;
+    await api('POST', 'api/admin/settings/reset'); $('saveBtn').classList.remove('dirty'); toast('Pengaturan default dipulihkan'); load();
+  };
+  $('stopBtn').onclick = async () => { await api('POST', 'api/admin/stop'); toast('Game dihentikan'); };
+  $('testBtn').onclick = async () => {
+    try { await api('POST', 'api/admin/test-game', { templateId: $('testTpl').value }); toast('Uji coba dimulai di layar TV. Pakai mouse di laptop TV.'); load(); }
+    catch (err) { toast(err.message); }
+  };
+
+  function enter() {
+    const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io' });
+    socket.on('connect', () => socket.emit('admin:join', PW, (ok) => {
+      if (!ok) { socket.disconnect(); $('login').classList.remove('hidden'); $('app').classList.add('hidden'); $('loginErr').classList.remove('hidden'); return; }
+      $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+      load();
+    }));
+    socket.on('admin:refresh', () => load().catch(() => {}));
+  }
+  $('loginForm').onsubmit = (e) => { e.preventDefault(); PW = $('pw').value; sessionStorage.setItem('spray_admin_pw', PW); enter(); };
+  buildForms();
+  if (PW) enter();
+</script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f18">
+<title>Ichiban Drag Race</title>
+<style>
+  :root { --primary: #d71920; --accent: #ffc400; --lc: #e3262d; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff; background: radial-gradient(circle at 50% -10%, #34394f, #0d0f18 70%); overscroll-behavior: none; }
+  .hidden { display: none !important; }
+  .wrap { max-width: 460px; margin: 0 auto; padding: 20px 16px 40px; }
+  .title { text-align: center; font-size: 30px; font-weight: 900; font-style: italic; text-transform: uppercase; text-shadow: 0 3px 0 var(--primary); margin: 4px 0 6px; }
+  .lanetag { text-align: center; margin-bottom: 14px; }
+  .lanetag span { display: inline-block; background: var(--lc); padding: 5px 14px; border-radius: 99px; font-weight: 900; font-size: 14px; letter-spacing: .05em; }
+  .card { background: #fff; color: #1b1b2f; border-radius: 18px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .card p { color: #666; margin: 0 0 4px; }
+  label { display: block; font-weight: 700; margin: 14px 0 6px; }
+  input { font: inherit; width: 100%; padding: 13px 14px; border-radius: 10px; border: 1px solid #d0d0dc; color: #1b1b2f; background: #fff; font-size: 16px; }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 14px; padding: 15px 20px; font-weight: 800; background: var(--primary); color: #fff; }
+  button:disabled { opacity: .5; }
+  .full { width: 100%; margin-top: 18px; font-size: 19px; }
+  .err { background: #ffe3e8; color: #b0002a; padding: 10px 12px; border-radius: 10px; margin-top: 14px; }
+  .msg { text-align: center; padding: 26px 8px; line-height: 1.5; }
+  .bigbtn { width: 100%; font-size: 34px; padding: 30px; margin-top: 18px; letter-spacing: .06em; box-shadow: 0 7px 0 rgba(0,0,0,.35); font-style: italic; font-weight: 900; }
+  .bigbtn:active { transform: translateY(4px); box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+  .sec { background: #2b2f3e; }
+  .howto { margin-top: 16px; line-height: 1.55; color: #dde; background: rgba(255,255,255,.06); border-radius: 14px; padding: 14px 16px; font-size: 15px; }
+  .howto b { color: var(--accent); }
+  .wait { text-align: center; margin-top: 18px; font-size: 18px; line-height: 1.5; }
+  .wait .cd { font-size: 54px; font-weight: 900; color: var(--accent); }
+
+  /* Kontroler balapan */
+  #v-race { position: fixed; inset: 0; display: flex; flex-direction: column; padding: calc(8px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+            user-select: none; -webkit-user-select: none; touch-action: none; background: #0b0c13; }
+  .rtop { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .rname { font-weight: 900; font-size: 18px; text-transform: uppercase; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .rname small { display: block; font-size: 11px; color: var(--lc); letter-spacing: .08em; }
+  .tree { display: flex; gap: 6px; background: #000; padding: 6px 8px; border-radius: 12px; }
+  .tree i { width: 22px; height: 22px; border-radius: 50%; background: #2a2a33; display: block; }
+  .tree i.a.on { background: #ffb300; box-shadow: 0 0 14px #ffb300; }
+  .tree i.g.on { background: #20ff6a; box-shadow: 0 0 16px #20ff6a; }
+  .tree i.r.on { background: #ff2020; box-shadow: 0 0 16px #ff2020; }
+  .leds { display: flex; gap: 5px; margin: 10px 0 4px; }
+  .leds i { flex: 1; height: 14px; border-radius: 4px; background: #1e2029; }
+  .leds i.on.g { background: #2bff88; } .leds i.on.y { background: #ffd23f; } .leds i.on.r { background: #ff3030; }
+  .leds.flash i { background: #2bff88 !important; box-shadow: 0 0 10px #2bff88; }
+  #tach { width: 100%; flex: 1 1 auto; min-height: 150px; max-height: 42vh; }
+  .fb { text-align: center; height: 40px; font-size: 32px; font-weight: 900; font-style: italic; }
+  .stats { display: flex; justify-content: space-around; font-size: 12px; color: #9aa1b2; text-align: center; margin-bottom: 8px; }
+  .stats b { display: block; font-size: 22px; color: #fff; font-variant-numeric: tabular-nums; }
+  #pedal { flex: 0 0 38vh; border-radius: 26px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; font-style: italic;
+           font-size: 52px; letter-spacing: .04em; touch-action: none; background: #2b2f3e; box-shadow: 0 8px 0 #11131b; transition: background .08s; text-align: center; line-height: 1.05; }
+  #pedal small { font-size: 16px; font-weight: 700; font-style: normal; opacity: .85; margin-top: 8px; letter-spacing: 0; }
+  #pedal.go { background: linear-gradient(180deg, #33ff8a, #0ea64e); box-shadow: 0 8px 0 #06532a; color: #032b14; }
+  #pedal.shift { background: linear-gradient(180deg, #ff4b4b, var(--primary)); box-shadow: 0 8px 0 #6d070b; }
+  #pedal.hot { background: linear-gradient(180deg, #4dffa0, #10b858); box-shadow: 0 8px 0 #06532a; color: #032b14; }
+  #pedal.press { transform: translateY(6px) scale(.985); box-shadow: 0 2px 0 rgba(0,0,0,.5); filter: brightness(1.15); }
+  #pedal.off { opacity: .55; }
+  .flashred { animation: fr .5s; } @keyframes fr { 30% { background: #6a0010; } }
+
+  .res { text-align: center; }
+  .res .big { font-size: 58px; font-weight: 900; color: var(--primary); line-height: 1.05; }
+  .res .out { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+  .res table { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 16px; }
+  .res td { padding: 6px 2px; border-top: 1px solid #eee; text-align: left; } .res td:last-child { text-align: right; font-weight: 800; }
+  .res .rank { display: inline-block; background: var(--accent); color: #3b2a00; font-weight: 900; padding: 8px 16px; border-radius: 99px; margin-top: 12px; font-size: 18px; }
+  .chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+  .chip { font-size: 12px; font-weight: 900; padding: 4px 9px; border-radius: 99px; color: #111; }
+  .chip.perfect { background: #2bff88; } .chip.bagus { background: #ffd23f; } .chip.cepat { background: #ff9d3f; } .chip.telat { background: #ff4d4d; color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap" id="main">
+  <div class="title" id="title">ICHIBAN DRAG RACE</div>
+  <div class="lanetag hidden" id="lanetag"><span id="lanename"></span></div>
+  <div id="v-loading" class="msg">Memuat…</div>
+  <div id="v-error" class="card hidden"><div class="msg" id="errText"></div></div>
+
+  <form id="v-form" class="card hidden" autocomplete="on">
+    <p>Isi data kamu, lalu HP ini jadi gas &amp; tuas gigi motormu.</p>
+    <label for="name">Nama</label>
+    <input id="name" required minlength="2" maxlength="40" autocomplete="name">
+    <div id="phoneBox">
+      <label for="phone">Nomor HP</label>
+      <input id="phone" type="tel" inputmode="tel" placeholder="08xxxxxxxxxx" autocomplete="tel">
+    </div>
+    <div id="extraBox" class="hidden">
+      <label for="extra" id="extraLabel"></label>
+      <input id="extra" maxlength="80">
+    </div>
+    <div class="err hidden" id="formErr"></div>
+    <button class="full" type="submit" id="submitBtn">Lanjut</button>
+  </form>
+
+  <div id="v-ready" class="hidden">
+    <div class="card msg" style="padding:18px">
+      <div style="font-size:20px">Halo, <b id="pname"></b>!</div>
+      <div style="color:#666;margin-top:6px">Motormu sudah di garis start. Naikkan volume HP 🔊</div>
+    </div>
+    <button class="bigbtn" id="readyBtn">SIAP! 🏁</button>
+    <div class="howto">
+      🚦 Lampu kuning menyala satu per satu. Tap <b>GAS</b> begitu lampu <b style="color:#2bff88">HIJAU</b>. Kalau duluan = <b style="color:#ff6b6b">FALSE START</b>.<br>
+      ⚙️ Tap <b>OPER GIGI</b> saat jarum RPM masuk <b style="color:#2bff88">zona hijau</b>. Terlalu cepat = tenaga drop, telat = mentok limiter.
+    </div>
+    <div class="err hidden" id="readyErr"></div>
+  </div>
+
+  <div id="v-wait" class="hidden">
+    <div class="card msg" style="padding:18px"><div style="font-size:22px;font-weight:900;color:#0d6b35">✅ Kamu SIAP!</div><div style="color:#666;margin-top:6px">Lihat layar besar. Jangan tutup halaman ini.</div></div>
+    <div class="wait" id="waitText"></div>
+    <button class="bigbtn sec hidden" id="soloBtn">Balap sendiri sekarang ▶</button>
+  </div>
+
+  <div id="v-done" class="card res hidden">
+    <div class="out" id="dout"></div>
+    <div style="color:#666">Skor kamu</div>
+    <div class="big" id="dscore">0</div>
+    <table id="dtable"></table>
+    <div class="chips" id="dchips"></div>
+    <div class="rank" id="drank"></div>
+    <p style="margin-top:16px">Terima kasih sudah ikut balap! Lihat papan skor di layar.</p>
+  </div>
+</div>
+
+<div id="v-race" class="hidden">
+  <div class="rtop">
+    <div class="rname"><small id="rlane"></small><span id="rname"></span></div>
+    <div class="tree" id="tree"><i class="a"></i><i class="a"></i><i class="a"></i><i class="g"></i><i class="r"></i></div>
+  </div>
+  <div class="leds" id="leds"></div>
+  <canvas id="tach"></canvas>
+  <div class="fb" id="fb"></div>
+  <div class="stats"><div>REAKSI<b id="srt">-.---</b></div><div>WAKTU<b id="set">0.00</b></div><div>KM/J<b id="skm">0</b></div></div>
+  <div id="pedal" class="off">TUNGGU<small>Lihat lampu start</small></div>
+</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script src="sim.js"></script>
+<script src="shared.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const token = new URLSearchParams(location.search).get('t') || '';
+  const PKEY = 'drag_pid_' + token;
+  let pid = null;
+  try { pid = sessionStorage.getItem(PKEY); } catch {}
+  let branding = {}, myLane = 0, waitIv = null;
+  const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io', transports: ['websocket', 'polling'] });
+  const clock = new Clock(socket);
+  const audio = new DragAudio();
+
+  function view(id) {
+    for (const v of ['v-loading', 'v-error', 'v-form', 'v-ready', 'v-wait', 'v-done']) $(v).classList.toggle('hidden', v !== id);
+    $('v-race').classList.toggle('hidden', id !== 'v-race');
+    $('main').classList.toggle('hidden', id === 'v-race');
+  }
+  function fail(m) { $('errText').textContent = m; view('v-error'); }
+  function applyBranding(b) {
+    if (!b) return;
+    branding = b;
+    const r = document.documentElement.style;
+    r.setProperty('--primary', b.primaryColor); r.setProperty('--accent', b.accentColor);
+    $('title').textContent = b.title; document.title = b.title;
+    audio.configure(b, true);
+    setLane(myLane);
+  }
+  function setLane(i) {
+    myLane = i;
+    const col = i ? branding.lane2Color : branding.lane1Color, nm = i ? branding.lane2Name : branding.lane1Name;
+    if (!col) return;
+    document.documentElement.style.setProperty('--lc', col);
+    $('lanename').textContent = nm; $('rlane').textContent = nm;
+    $('lanetag').classList.toggle('hidden', branding.mode === 'solo');
+  }
+  const f3 = (x) => (x === null || x === undefined ? '-' : Number(x).toFixed(3));
+
+  function showDone(r) {
+    $('dout').textContent = r.dq ? '🚫 FALSE START' : r.outcome === 'menang' ? '🏆 KAMU MENANG!' : r.outcome === 'kalah' ? 'Kalah tipis! Coba lagi!' : '🏁 FINISH!';
+    $('dscore').textContent = Number(r.score).toLocaleString('id-ID');
+    $('dtable').innerHTML = r.dq ? '' : `<tr><td>Reaksi</td><td>${r.falseStart ? 'FALSE START' : f3(r.rt) + ' s'}</td></tr><tr><td>Waktu tempuh (ET)</td><td>${f3(r.et)} s</td></tr><tr><td>Total</td><td>${f3(r.total)} s</td></tr><tr><td>Top speed</td><td>${r.topKmh ?? 0} km/j</td></tr>`;
+    $('dchips').innerHTML = (r.shifts || []).map((s) => `<span class="chip ${s.grade}">Gigi ${s.gear}: ${({ perfect: 'PERFECT', bagus: 'BAGUS', cepat: 'CEPAT', telat: 'TELAT' })[s.grade]}</span>`).join('');
+    $('drank').textContent = r.test ? 'Uji coba' : r.rank ? `Peringkat #${r.rank}` : 'Skor terbaikmu sebelumnya lebih tinggi';
+    view('v-done');
+  }
+
+  function check() {
+    socket.emit('play:check', { token, pid }, (res) => {
+      applyBranding(res.branding);
+      if (typeof res.lane === 'number') setLane(res.lane);
+      if (!res.ok) return fail(res.error);
+      if (res.stage === 'form') {
+        $('phoneBox').classList.toggle('hidden', !res.askPhone);
+        $('phone').required = !!res.askPhone;
+        $('extraBox').classList.toggle('hidden', !res.extraFieldLabel);
+        $('extraLabel').textContent = res.extraFieldLabel || '';
+        $('extra').required = !!res.extraFieldLabel;
+        view('v-form');
+      } else if (res.stage === 'ready') { $('pname').textContent = res.name; view('v-ready'); }
+      else if (res.stage === 'waiting') { view('v-wait'); }
+      else if (res.stage === 'race') { startRace(res.race); }
+      else if (res.stage === 'done') showDone(res.result);
+    });
+  }
+  socket.on('connect', check);
+  socket.on('branding', applyBranding);
+
+  $('v-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    $('formErr').classList.add('hidden');
+    $('submitBtn').disabled = true;
+    socket.emit('play:register', { token, name: $('name').value, phone: $('phone').value, extra: $('extra').value }, (res) => {
+      $('submitBtn').disabled = false;
+      if (!res.ok) { $('formErr').textContent = res.error; $('formErr').classList.remove('hidden'); return; }
+      pid = res.pid; setLane(res.lane);
+      try { sessionStorage.setItem(PKEY, pid); } catch {}
+      $('pname').textContent = res.name;
+      view('v-ready');
+    });
+  });
+
+  $('readyBtn').onclick = () => {
+    audio.unlock(); audio.click();
+    $('readyBtn').disabled = true;
+    socket.emit('play:ready', { pid }, (res) => {
+      $('readyBtn').disabled = false;
+      if (!res.ok) { $('readyErr').textContent = res.error; $('readyErr').classList.remove('hidden'); return; }
+      $('soloBtn').classList.toggle('hidden', !(res.mode === 'duel' && res.allowSolo));
+      $('waitText').textContent = res.mode === 'solo' ? 'Balapan segera dimulai…' : 'Menunggu penantang di lajur sebelah…';
+      view('v-wait');
+    });
+  };
+  $('soloBtn').onclick = () => { audio.unlock(); socket.emit('play:solo', { pid }, () => {}); };
+
+  socket.on('lobby', (d) => {
+    if ($('v-wait').classList.contains('hidden')) return;
+    clearInterval(waitIv);
+    const tick = () => {
+      let t = '';
+      if (d.opponent) t = `Lawanmu: <b>${d.opponent.replace(/[<>&]/g, '')}</b> ${d.opponentStage === 'ready' ? '✅ siap' : '(belum siap)'}`;
+      else if (d.opponentStage === 'form') t = 'Penantang sedang mendaftar…';
+      else if (d.opponentStage !== 'off') t = 'Menunggu penantang scan QR lajur sebelah…';
+      else t = 'Balapan segera dimulai…';
+      if (d.waitUntil) { const left = Math.max(0, Math.ceil((d.waitUntil - clock.now()) / 1000)); t += `<div class="cd">${left}</div>detik lagi balapan dimulai`; }
+      $('waitText').innerHTML = t;
+    };
+    tick(); waitIv = setInterval(tick, 250);
+  });
+  socket.on('lane:dropped', ({ message }) => { pid = null; try { sessionStorage.removeItem(PKEY); } catch {} fail(message); });
+  socket.on('screen:lost', () => fail('Layar TV terputus. Silakan scan ulang QR di layar.'));
+
+  // ---------------- Balapan ----------------
+  let R = null;
+  const tach = $('tach'), tctx = tach.getContext('2d');
+  $('leds').innerHTML = Array.from({ length: 10 }, (_, i) => `<i class="${i < 5 ? 'g' : i < 8 ? 'y' : 'r'}"></i>`).join('');
+  const GR = { perfect: ['PERFECT!', '#2bff88'], bagus: ['BAGUS', '#ffd23f'], cepat: ['TERLALU CEPAT', '#ff9d3f'], telat: ['TELAT!', '#ff4d4d'] };
+
+  function startRace(info) {
+    clearInterval(waitIv);
+    audio.unlock();
+    const cfg = info.cfg;
+    R = { ...info, racer: new DragSim.Racer(cfg), cfg, beeps: {}, shiftsSeen: 0, launched: false, fsSeen: false, fin: false, fbT: 0 };
+    const mine = info.lanes[info.myLane];
+    if (mine && mine.taps) R.racer.setTaps(mine.taps);
+    setLane(info.myLane);
+    $('rname').textContent = mine ? mine.name : '';
+    $('tree').classList.toggle('hidden', branding.treeOnPhone === false);
+    $('fb').textContent = '';
+    if (R.engine) R.engine.stop();
+    R.engine = audio.createEngine(0);
+    view('v-race');
+    try { document.documentElement.requestFullscreen?.(); } catch {}
+    sizeTach();
+    requestAnimationFrame(loop);
+  }
+  socket.on('race:start', startRace);
+  socket.on('race:taps', ({ lane, taps }) => { if (R && lane === R.myLane) { const cur = R.racer.taps; if (cur.length !== taps.length || cur.some((x, i) => Math.abs(x - taps[i]) > 1e-4)) R.racer.setTaps(taps); } });
+  socket.on('race:result', (r) => {
+    if (!R) return;
+    const me = r.results[r.myLane];
+    R.done = true;
+    setTimeout(() => { if (R.engine) R.engine.stop(); try { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch {} showDone({ ...me, outcome: r.results.filter(Boolean).length === 1 ? 'solo' : me.win ? 'menang' : 'kalah' }); }, 1800);
+  });
+
+  function sizeTach() {
+    const dpr = Math.min(2, devicePixelRatio || 1), rc = tach.getBoundingClientRect();
+    tach.width = rc.width * dpr; tach.height = rc.height * dpr;
+  }
+  addEventListener('resize', () => R && sizeTach());
+
+  function fb(text, color) { $('fb').textContent = text; $('fb').style.color = color; R.fbT = performance.now(); }
+
+  function pedalDown(e) {
+    e.preventDefault();
+    if (!R || R.done) return;
+    const now = clock.now();
+    $('pedal').classList.add('press');
+    if (now < R.stageAt) return;
+    const tt = (now - R.greenAt) / 1000;
+    R.racer.addTap(tt);
+    socket.emit('race:tap', { pid, t: now });
+    navigator.vibrate && navigator.vibrate(15);
+    audio.click();
+  }
+  $('pedal').addEventListener('pointerdown', pedalDown);
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => $('pedal').addEventListener(ev, () => $('pedal').classList.remove('press')));
+  $('pedal').addEventListener('contextmenu', (e) => e.preventDefault());
+  document.addEventListener('touchmove', (e) => { if (!$('v-race').classList.contains('hidden')) e.preventDefault(); }, { passive: false });
+
+  function loop() {
+    if (!R || $('v-race').classList.contains('hidden')) return;
+    const now = clock.now();
+    const t = (now - R.greenAt) / 1000;
+    const rc = R.racer, s = rc.advance(Math.max(rc.s.t, t)), cfg = R.cfg;
+    // lampu
+    const amb = R.ambers.map((a) => now >= a && now < R.greenAt + 400);
+    const red = s.falseStart && t >= s.fsT;
+    const green = !red && now >= R.greenAt;
+    const bulbs = $('tree').children;
+    for (let k = 0; k < 3; k++) bulbs[k].classList.toggle('on', amb[k]);
+    bulbs[3].classList.toggle('on', green); bulbs[4].classList.toggle('on', red);
+    if (branding.treeOnPhone !== false) {
+      const bp = (key, cond, fn) => { if (cond && !R.beeps[key]) { R.beeps[key] = 1; fn(); } };
+      R.ambers.forEach((a, i) => bp('a' + i, now >= a && (i === 0 || a !== R.ambers[0]), () => audio.beepAmber()));
+      bp('g', green, () => audio.beepGreen());
+    }
+    if (red && !R.fsSeen) { R.fsSeen = true; audio.beepRed(); fb(cfg.falseStartRule === 'diskualifikasi' ? 'FALSE START!' : `FALSE START +${cfg.falseStartPenaltySec}s`, '#ff4d4d'); $('v-race').classList.remove('flashred'); void $('v-race').offsetWidth; $('v-race').classList.add('flashred'); navigator.vibrate && navigator.vibrate([200, 80, 200]); }
+    if (s.launched && !R.launched && t >= s.launchT) {
+      R.launched = true; audio.screech();
+      if (!s.falseStart && !s.autoLaunch) fb('REAKSI ' + s.launchT.toFixed(3), s.launchT < 0.25 ? '#2bff88' : s.launchT < 0.45 ? '#ffd23f' : '#ff9d3f');
+    }
+    while (R.shiftsSeen < s.shifts.length) {
+      const sh = s.shifts[R.shiftsSeen++];
+      fb(GR[sh.grade][0], GR[sh.grade][1]); audio.pop(0, sh.grade === 'perfect'); if (sh.grade === 'perfect') audio.perfect();
+    }
+    if (s.finishT !== null && !R.fin) { R.fin = true; fb('FINISH ' + s.finishT.toFixed(3) + ' s', '#fff'); }
+    if (performance.now() - R.fbT > 1400 && !R.fin) $('fb').textContent = '';
+    // tombol
+    const p = $('pedal');
+    let cls = 'off', html = 'TUNGGU<small>Lihat lampu start</small>';
+    if (s.dq) { html = 'DISKUALIFIKASI<small>False start</small>'; }
+    else if (s.finishT !== null) { cls = 'off'; html = 'FINISH!<small>' + s.finishT.toFixed(3) + ' detik</small>'; }
+    else if (now < R.stageAt) { html = 'SIAP…<small>Burnout dulu!</small>'; }
+    else if (!s.launched) {
+      if (green) { cls = 'go'; html = 'GAS!!!<small>TAP SEKARANG!</small>'; }
+      else if (red) { cls = 'off'; html = 'PENALTI<small>Motor jalan otomatis</small>'; }
+      else { cls = ''; html = 'GAS<small>Tunggu lampu HIJAU…</small>'; }
+    } else if (s.gear < rc.m.n - 1) {
+      const pct = s.rpm / cfg.redline;
+      cls = pct >= cfg.perfectFromPct / 100 ? 'hot' : 'shift';
+      html = `OPER GIGI ▲<small>Gigi ${s.gear + 1} → ${s.gear + 2}</small>`;
+    } else { cls = 'off'; html = 'GIGI TOP<small>Gas terus sampai finish!</small>'; }
+    if (p.dataset.h !== html) { p.innerHTML = html; p.dataset.h = html; }
+    p.classList.remove('off', 'go', 'shift', 'hot'); if (cls) p.classList.add(cls);
+    // LED shift light
+    const pct = s.launched ? s.rpm / cfg.redline : 0;
+    const leds = $('leds');
+    const onN = Math.max(0, Math.min(10, Math.round(((pct - 0.6) / (cfg.perfectFromPct / 100 - 0.6)) * 9)));
+    [...leds.children].forEach((el, k) => el.classList.toggle('on', k < onN));
+    leds.classList.toggle('flash', s.launched && s.finishT === null && pct >= cfg.perfectFromPct / 100 && s.gear < rc.m.n - 1 && Math.floor(performance.now() / 80) % 2 === 0);
+    // statistik
+    $('srt').textContent = s.falseStart ? 'FALSE' : s.launched && !s.autoLaunch && t >= s.launchT ? s.launchT.toFixed(3) : '-.---';
+    $('set').textContent = s.finishT !== null ? (s.finishT - s.launchT).toFixed(3) : s.launched && t > s.launchT ? (t - s.launchT).toFixed(2) : '0.00';
+    $('skm').textContent = Math.round(s.v * 3.6);
+    drawTach(s, cfg, rc.m.n);
+    // suara mesin
+    if (R.engine) {
+      const thr = s.finishT !== null ? 0.2 : !s.launched ? (now >= R.stageAt ? 0.6 : 0.25) : t < s.shiftUntil ? 0.3 : 1;
+      R.engine.set(s.finishT !== null ? cfg.redline * 0.35 : s.rpm, thr, 1);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function drawTach(s, cfg, nGears) {
+    const c = tctx, w = tach.width, h = tach.height;
+    c.clearRect(0, 0, w, h);
+    const R0 = Math.min(w / 2 - 20, h * 0.78), cx = w / 2, cy = h * 0.88;
+    const a0 = Math.PI * 0.95, a1 = Math.PI * 2.05;
+    const ang = (p) => a0 + (a1 - a0) * Math.min(1.04, Math.max(0, p));
+    const lw = R0 * 0.13;
+    c.lineWidth = lw;
+    c.strokeStyle = '#1e2029'; c.beginPath(); c.arc(cx, cy, R0, a0, a1); c.stroke();
+    c.strokeStyle = '#ffd23f'; c.beginPath(); c.arc(cx, cy, R0, ang(cfg.goodFromPct / 100), ang(cfg.perfectFromPct / 100)); c.stroke();
+    c.strokeStyle = '#2bff88'; c.beginPath(); c.arc(cx, cy, R0, ang(cfg.perfectFromPct / 100), ang(0.995)); c.stroke();
+    c.strokeStyle = '#ff2b2b'; c.beginPath(); c.arc(cx, cy, R0, ang(0.995), a1); c.stroke();
+    const maxK = Math.floor(cfg.redline / 1000);
+    c.fillStyle = '#aab'; c.font = `700 ${R0 * 0.1}px system-ui`; c.textAlign = 'center';
+    for (let k = 0; k <= maxK; k += maxK > 12 ? 2 : 1) { const a = ang((k * 1000) / cfg.redline); c.fillText(k, cx + Math.cos(a) * (R0 - lw * 1.8), cy + Math.sin(a) * (R0 - lw * 1.8) + R0 * 0.035); }
+    const na = ang(s.rpm / cfg.redline);
+    c.strokeStyle = '#ff3d3d'; c.lineWidth = R0 * 0.035; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(na) * (R0 + lw * 0.4), cy + Math.sin(na) * (R0 + lw * 0.4)); c.stroke();
+    c.fillStyle = '#ddd'; c.beginPath(); c.arc(cx, cy, R0 * 0.06, 0, 7); c.fill();
+    c.fillStyle = s.launched && s.rpm / cfg.redline >= cfg.perfectFromPct / 100 && s.gear < nGears - 1 ? '#2bff88' : '#fff';
+    c.font = `900 ${R0 * 0.4}px system-ui`;
+    c.fillText(s.launched ? String(s.gear + 1) : 'N', cx, cy - R0 * 0.14);
+  }
+</script>
+</body>
+</html>

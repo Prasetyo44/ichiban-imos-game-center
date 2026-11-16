@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Papan Skor</title>
+<style>
+  :root { --primary: #d71920; --accent: #ffc400; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff;
+         background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--primary) 55%, #000), #0b0c14 75%); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 4vh 4vw; }
+  h1 { font-size: clamp(32px, 7vh, 80px); margin: 0; text-align: center; text-transform: uppercase; text-shadow: 0 .5vh 0 var(--primary); }
+  h2 { text-align: center; font-weight: 600; opacity: .85; margin: 1vh 0 4vh; font-size: clamp(18px, 3vh, 32px); }
+  .row { display: grid; grid-template-columns: 8vh 1fr auto; gap: 2vw; align-items: center; padding: 1.4vh 2vw; border-radius: 1.6vh; font-size: clamp(16px, 3.2vh, 36px); margin-bottom: 1vh; background: rgba(255,255,255,.07); }
+  .rk { width: 6vh; height: 6vh; border-radius: 50%; display: grid; place-items: center; font-weight: 900; background: rgba(255,255,255,.15); }
+  .r1 .rk { background: #ffcf33; color: #4a3500; } .r2 .rk { background: #d9dde3; color: #333; } .r3 .rk { background: #e09a5a; color: #3b1d00; }
+  .r1 { background: rgba(255,207,51,.16); }
+  .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nm small { display: block; font-weight: 400; opacity: .6; font-size: .6em; }
+  .sc { font-weight: 900; color: var(--accent); font-size: 1.2em; }
+  .empty { text-align: center; opacity: .7; font-size: 3vh; }
+</style>
+</head>
+<body>
+<div class="wrap"><h1 id="title">ICHIBAN DRAG RACE</h1><h2>🏆 Papan Skor</h2><div id="lb"></div></div>
+<script src="socket.io/socket.io.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const f3 = (x) => (x === null || x === undefined ? '-' : Number(x).toFixed(3));
+  function render(lb) {
+    $('lb').innerHTML = lb.length ? lb.map((r) => `<div class="row r${r.rank}"><div class="rk">${r.rank}</div><div class="nm">${esc(r.name)}<small>${esc(r.phone)} · ${r.dq ? 'DQ' : `RT ${f3(r.rt)} · total ${f3(r.total)} s · ${r.topKmh ?? 0} km/j`}</small></div><div class="sc">${r.score.toLocaleString('id-ID')}</div></div>`).join('') : '<div class="empty">Belum ada skor</div>';
+  }
+  function brand(b) { document.documentElement.style.setProperty('--primary', b.primaryColor); document.documentElement.style.setProperty('--accent', b.accentColor); $('title').textContent = b.title; }
+  const load = () => fetch('api/leaderboard').then((r) => r.json()).then((d) => { brand(d.branding); render(d.leaderboard); });
+  const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io' });
+  socket.on('connect', load);
+  socket.on('leaderboard:update', render);
+  socket.on('branding', (b) => { brand(b); load(); });
+</script>
+</body>
+</html>

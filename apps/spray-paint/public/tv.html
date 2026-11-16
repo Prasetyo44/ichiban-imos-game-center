@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spray Paint Challenge - Layar</title>
+<style>
+  :root { --primary: #d71920; --accent: #ffc400; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff; }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; object-fit: contain; background: #000; }
+  .hidden { display: none !important; }
+  .ov { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .dim { background: linear-gradient(90deg, rgba(0,0,0,.72), rgba(0,0,0,.25) 52%, rgba(0,0,0,.6)); }
+  .card { background: rgba(10,12,24,.84); backdrop-filter: blur(6px); border: 2px solid rgba(255,255,255,.12); border-radius: 2.2vh; box-shadow: 0 2vh 6vh rgba(0,0,0,.5); }
+
+  .idle { display: grid; grid-template-columns: 1.05fr .95fr; gap: 3vw; width: 100%; height: 100%; padding: 5vh 4vw; align-items: center; }
+  .brand { display: flex; align-items: center; gap: 1.5vw; }
+  .brand img { height: 10vh; }
+  .title { font-size: 8.6vh; font-weight: 900; line-height: .95; letter-spacing: -.02em; text-transform: uppercase; color: #fff; text-shadow: 0 .6vh 0 var(--primary), 0 1.2vh 2vh rgba(0,0,0,.5); }
+  .sub { font-size: 3vh; margin-top: 1.5vh; opacity: .95; text-shadow: 0 2px 6px rgba(0,0,0,.7); max-width: 46vw; }
+  .join { display: flex; gap: 2.5vw; align-items: center; margin-top: 4vh; padding: 2.5vh 2vw; }
+  .qr { background: #fff; padding: 1.2vh; border-radius: 1.6vh; }
+  .qr img { width: 30vh; height: 30vh; display: block; }
+  .steps { font-size: 2.6vh; line-height: 1.5; }
+  .steps b { color: var(--accent); }
+  .scan { font-size: 4vh; font-weight: 900; color: var(--accent); margin-bottom: 1vh; }
+  .url { font-size: 1.5vh; opacity: .55; margin-top: 1.5vh; word-break: break-all; }
+  .cans { display: flex; align-items: flex-end; gap: 1vw; margin-top: 3vh; }
+  .cans img { height: 14vh; filter: drop-shadow(0 1.5vh 1.5vh rgba(0,0,0,.6)); }
+  .cans img.nc { height: 12vh; }
+
+  .lb { padding: 3vh 2vw; align-self: center; }
+  .lb h2 { margin: 0 0 2vh; font-size: 4vh; display: flex; align-items: center; gap: 1vw; }
+  .lb h2::before { content: '🏆'; }
+  .row { display: grid; grid-template-columns: 5.5vh 9vh 1fr auto; align-items: center; gap: 1vw; padding: .8vh 1vw; border-radius: 1.2vh; font-size: 2.6vh; }
+  .row:nth-child(odd) { background: rgba(255,255,255,.06); }
+  .row .rk { width: 5vh; height: 5vh; border-radius: 50%; display: grid; place-items: center; font-weight: 900; background: rgba(255,255,255,.15); }
+  .row.r1 .rk { background: #ffcf33; color: #4a3500; } .row.r2 .rk { background: #d9dde3; color: #333; } .row.r3 .rk { background: #e09a5a; color: #3b1d00; }
+  .row .th { width: 9vh; height: 5.4vh; border-radius: .8vh; object-fit: cover; background: rgba(255,255,255,.08); }
+  .row .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .nm small { display: block; font-weight: 400; opacity: .65; font-size: 1.7vh; }
+  .row .sc { font-weight: 900; color: var(--accent); font-size: 3.1vh; text-align: right; }
+  .row .sc small { display: block; font-size: 1.6vh; color: #fff; opacity: .6; font-weight: 600; }
+  .row.me { outline: .4vh solid var(--accent); background: rgba(255,196,0,.18); }
+  .empty { opacity: .7; font-size: 2.6vh; padding: 2vh 0; }
+  .footer { position: fixed; left: 0; right: 0; bottom: 1.6vh; text-align: center; font-size: 2vh; opacity: .8; text-shadow: 0 2px 4px #000; }
+
+  .msg { padding: 5vh 5vw; text-align: center; max-width: 80vw; }
+  .msg .big { font-size: 7vh; font-weight: 900; }
+  .msg .hint { font-size: 3.2vh; opacity: .9; margin-top: 2vh; }
+  .msg img.tpl { height: 30vh; max-width: 60vw; margin: 3vh auto 0; display: block; filter: drop-shadow(0 2vh 2vh rgba(0,0,0,.5)); }
+  .pulse { animation: pulse 1.2s ease-in-out infinite; } @keyframes pulse { 50% { transform: scale(1.06); } }
+  .dots::after { content: ''; animation: dots 1.5s steps(4) infinite; }
+  @keyframes dots { 0% { content: '' } 25% { content: '.' } 50% { content: '..' } 75% { content: '...' } }
+
+  .result { display: grid; grid-template-columns: 1.15fr .85fr; gap: 2.5vw; padding: 3.5vh 2.5vw; width: min(94vw, 172vh); align-items: start; }
+  .shot { position: relative; }
+  .shot img { width: 100%; border-radius: 1.6vh; display: block; border: .4vh solid rgba(255,255,255,.15); }
+  .grade { position: absolute; right: -1.5vh; top: -2.5vh; width: 18vh; height: 18vh; border-radius: 50%; display: grid; place-items: center; text-align: center;
+           background: var(--primary); border: .8vh solid #fff; box-shadow: 0 1vh 3vh rgba(0,0,0,.5); transform: scale(0) rotate(-30deg); transition: transform .45s cubic-bezier(.2,1.6,.4,1); }
+  .grade.show { transform: scale(1) rotate(-10deg); }
+  .grade b { font-size: 9vh; line-height: 1; display: block; }
+  .grade small { font-size: 1.6vh; font-weight: 800; display: block; margin-top: -.5vh; padding: 0 1vh; }
+  .go { font-size: 5.4vh; font-weight: 900; color: var(--accent); text-shadow: 0 .5vh 0 var(--primary); }
+  .reason { font-size: 2.4vh; opacity: .8; margin: .5vh 0 1.5vh; }
+  .final { font-size: 12vh; font-weight: 900; line-height: 1; }
+  .final small { display: block; font-size: 2.2vh; font-weight: 600; opacity: .7; letter-spacing: .2em; }
+  .brk { margin-top: 2vh; font-size: 2.5vh; display: grid; grid-template-columns: 1fr auto; gap: .6vh 2vw; }
+  .brk span:nth-child(even) { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .brk .neg { color: #ff7a85; } .brk .pos { color: #4fe08a; }
+  .badge { display: inline-block; margin-top: 2.2vh; background: var(--primary); padding: 1.1vh 2vw; border-radius: 99px; font-size: 3vh; font-weight: 900; }
+  .next { font-size: 1.9vh; opacity: .6; margin-top: 1.6vh; }
+  .result .lb { padding: 0; margin-top: 2.5vh; grid-column: 1 / -1; display: none; }
+
+  .tools { position: fixed; top: 10px; right: 12px; display: flex; gap: 8px; z-index: 5; }
+  .tools button { pointer-events: auto; font: inherit; font-size: 13px; padding: 7px 12px; border: 0; border-radius: 8px; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; }
+  .tools button.need { background: var(--primary); animation: pulse 1.2s infinite; }
+  .status { position: fixed; bottom: 6px; right: 10px; font-size: 11px; opacity: .45; }
+  @media (max-aspect-ratio: 4/3) { .idle { grid-template-columns: 1fr; } .result { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="s-qr" class="ov dim">
+  <div class="idle">
+    <div>
+      <div class="brand"><img id="logo" class="hidden" alt=""><div class="title" id="title">SPRAY PAINT CHALLENGE</div></div>
+      <div class="sub" id="sub"></div>
+      <div class="join card">
+        <div class="qr"><img id="qr" alt="QR code"></div>
+        <div class="steps">
+          <div class="scan">SCAN &amp; SEMPROT!</div>
+          1. Scan QR dengan kamera HP<br>
+          2. Isi nama, pilih motor<br>
+          3. HP jadi <b>kaleng semprot</b>: sentuh &amp; geser untuk mengecat<br>
+          4. Cat <b>serata mungkin</b>, jangan meleber &amp; jangan terlalu tebal
+          <div class="url" id="url"></div>
+        </div>
+      </div>
+      <div class="cans" id="cans"><img src="img/can-aerosol.png" alt=""><img class="nc" src="img/can-nc.png" alt=""><img src="img/can-aerosol.png" alt="" style="height:11vh"></div>
+    </div>
+    <div class="lb card"><h2>Papan Skor</h2><div id="lb"></div></div>
+  </div>
+</div>
+
+<div id="s-form" class="ov dim hidden">
+  <div class="msg card"><div class="big dots">Pengecat sedang mendaftar</div><div class="hint">Siapkan kalengnya, sebentar lagi mulai!</div></div>
+</div>
+
+<div id="s-ready" class="ov dim hidden">
+  <div class="msg card">
+    <div class="big">Halo, <span id="pname"></span>!</div>
+    <div class="hint">Motor yang akan kamu cat: <b id="ptpl"></b></div>
+    <img class="tpl" id="ptplImg" alt="">
+    <div class="hint pulse">Tekan tombol <b>MULAI</b> di HP kamu</div>
+  </div>
+</div>
+
+<div id="s-over" class="ov dim hidden">
+  <div class="result card">
+    <div class="shot"><img id="oshot" alt=""><div class="grade" id="ograde"><div><b id="ogl">A</b><small id="ogt"></small></div></div></div>
+    <div>
+      <div class="go" id="otitle">WAKTU HABIS!</div>
+      <div class="reason" id="oreason"></div>
+      <div class="final"><small>SKOR</small><span id="oscore">0</span></div>
+      <div class="brk" id="obrk"></div>
+      <div class="badge" id="orank"></div>
+      <div class="next" id="onext"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer" id="footer"></div>
+<div class="tools"><button id="soundBtn" class="need">🔊 Klik untuk aktifkan suara</button><button id="fsBtn">⛶ Layar penuh</button></div>
+<div class="status" id="status">menghubungkan…</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script src="audio.js"></script>
+<script src="game.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io' });
+  const audio = window.sfx = new SprayAudio();
+  let branding = {};
+  let holdTimer = null, countTimer = null;
+  const GRADES = { S: 'PENGECAT PRO', A: 'BENGKEL JUARA', B: 'LUMAYAN RAPI', C: 'PERLU LATIHAN', D: 'MASIH BELEPOTAN' };
+
+  const game = window.game = new PaintGame($('cv'), {
+    audio,
+    onRunning: () => socket.emit('game:running'),
+    onTick: (d) => socket.emit('game:tick', d),
+    onEvent: (d) => socket.emit('game:event', d),
+    onOver: (res) => socket.emit('game:over', res),
+  });
+
+  let curScreen = 's-qr';
+  function refreshTools() { document.querySelector('.tools').classList.toggle('hidden', curScreen !== 's-qr' && !$('soundBtn').classList.contains('need')); $('fsBtn').classList.toggle('hidden', curScreen !== 's-qr'); }
+  function show(id) {
+    curScreen = id;
+    for (const v of ['s-qr', 's-form', 's-ready', 's-over']) $(v).classList.toggle('hidden', v !== id);
+    $('footer').classList.toggle('hidden', id !== 's-qr');
+    refreshTools();
+  }
+  function applyBranding(b) {
+    branding = b;
+    game.setBranding(b);
+    audio.setConfig(b.sound);
+    document.documentElement.style.setProperty('--primary', b.primaryColor);
+    document.documentElement.style.setProperty('--accent', b.accentColor);
+    $('title').textContent = b.title; $('sub').textContent = b.subtitle; $('footer').textContent = b.footer;
+    document.title = b.title + ' - Layar';
+    $('logo').classList.toggle('hidden', !b.logo); if (b.logo) $('logo').src = b.logo;
+    $('cans').classList.toggle('hidden', !b.showCans);
+  }
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function renderLb(el, list, meRank) {
+    if (!list.length) { el.innerHTML = '<div class="empty">Belum ada skor. Jadilah pengecat pertama!</div>'; return; }
+    el.innerHTML = list.map((r) => `<div class="row r${r.rank} ${meRank && r.rank === meRank ? 'me' : ''}">
+      <div class="rk">${r.rank}</div>${r.snapshot ? `<img class="th" src="${esc(r.snapshot)}" alt="">` : '<div class="th"></div>'}
+      <div class="nm">${esc(r.name)}<small>${esc(r.template)} · rata ${r.rata ?? 0}%</small></div>
+      <div class="sc">${r.score.toLocaleString('id-ID')}<small>nilai ${esc(r.grade || '-')}</small></div></div>`).join('');
+  }
+
+  socket.on('connect', () => { $('status').textContent = 'terhubung'; socket.emit('screen:hello'); });
+  socket.on('disconnect', () => { $('status').textContent = 'koneksi terputus, mencoba lagi…'; });
+  socket.on('branding', applyBranding);
+  socket.on('screen:qr', ({ qr, url, branding: b, leaderboard }) => {
+    clearInterval(holdTimer); clearInterval(countTimer);
+    applyBranding(b);
+    $('qr').src = qr; $('url').textContent = url;
+    renderLb($('lb'), leaderboard);
+    if (game.mode !== 'idle') game.startIdle(b.templates);
+    audio.duck(false); audio.sprayOn(false); audio.playMusic('musicIdle');
+    show('s-qr');
+  });
+  socket.on('leaderboard', (lb) => renderLb($('lb'), lb));
+  socket.on('screen:form', () => show('s-form'));
+  socket.on('screen:ready', ({ name, template }) => {
+    $('pname').textContent = name; $('ptpl').textContent = template.name; $('ptplImg').src = template.src;
+    audio.play('join');
+    show('s-ready');
+  });
+  let mouseOn = true;
+  socket.on('game:start', (cfg) => {
+    mouseOn = cfg.mouseOnTv !== false;
+    show(null);
+    game.start(cfg);
+  });
+  socket.on('aim', ({ x, y, s }) => game.aim(x, y, s));
+  socket.on('color', ({ c }) => game.setColor(c));
+  socket.on('game:finishReq', () => game.finishReq());
+  socket.on('game:forceEnd', () => game.forceEnd());
+
+  socket.on('game:result', (r) => {
+    setTimeout(() => {
+      $('otitle').textContent = r.reason === 'selesai' ? 'SELESAI!' : r.reason === 'admin' ? 'DIHENTIKAN' : 'WAKTU HABIS!';
+      $('oreason').textContent = r.name + (r.test ? ' · uji coba' : '');
+      $('oshot').src = r.snapshot || '';
+      $('oshot').classList.toggle('hidden', !r.snapshot);
+      $('ogl').textContent = r.grade; $('ogt').textContent = GRADES[r.grade] || '';
+      $('ograde').classList.remove('show');
+      $('obrk').innerHTML = `<span>Cat rata</span><span class="pos">${r.rata}%</span>
+        <span>Meleber (lewat bodi)</span><span class="neg">${r.overspray}%</span>
+        <span>Meleleh (terlalu tebal)</span><span class="neg">${r.drip}%</span>
+        <span>Bonus waktu</span><span class="pos">+${r.bonus.toLocaleString('id-ID')}</span>`;
+      $('orank').textContent = r.test ? 'Uji coba · tidak masuk papan skor' : r.rank ? `Peringkat #${r.rank}` : 'Skor terbaikmu masih lebih tinggi!';
+      $('orank').style.visibility = 'hidden';
+      show('s-over');
+      // animasi hitung skor
+      let cur = 0; const target = r.score, steps = 28; let i = 0;
+      clearInterval(countTimer);
+      countTimer = setInterval(() => {
+        i++; cur = Math.round((target * i) / steps);
+        $('oscore').textContent = cur.toLocaleString('id-ID');
+        if (i % 2 === 0) audio.play('count', { vol: 0.5, rate: 0.8 + i / steps });
+        if (i >= steps) {
+          clearInterval(countTimer);
+          $('ograde').classList.add('show');
+          $('orank').style.visibility = 'visible';
+          audio.play(r.grade === 'S' || r.grade === 'A' ? 'win' : 'good');
+          setTimeout(() => audio.duck(false), 2500);
+        }
+      }, 55);
+      let left = (r.holdSec || 15) - 1;
+      clearInterval(holdTimer);
+      const tick = () => { $('onext').textContent = `QR untuk peserta berikutnya muncul dalam ${Math.max(0, left)} detik`; left--; };
+      tick(); holdTimer = setInterval(tick, 1000);
+    }, 1200);
+  });
+
+  // Mouse di TV (untuk uji coba tanpa HP): gerak = bidik, tahan klik = semprot, angka 1-9 = ganti warna
+  const cv = $('cv');
+  function toCanvas(e) { const r = cv.getBoundingClientRect(); const s = Math.min(r.width / 1920, r.height / 1080); const ox = (r.width - 1920 * s) / 2, oy = (r.height - 1080 * s) / 2; return { x: (e.clientX - r.left - ox) / s, y: (e.clientY - r.top - oy) / s }; }
+  let mouseDown = false;
+  const mouseOk = () => mouseOn && (game.mode === 'playing' || game.mode === 'countdown');
+  addEventListener('mousemove', (e) => { if (mouseOk()) { const p = toCanvas(e); game.aimScreen(p.x, p.y, mouseDown); } });
+  addEventListener('mousedown', (e) => { if (mouseOk()) { mouseDown = true; const p = toCanvas(e); game.aimScreen(p.x, p.y, true); } });
+  addEventListener('mouseup', (e) => { mouseDown = false; if (mouseOk()) { const p = toCanvas(e); game.aimScreen(p.x, p.y, false); } });
+  addEventListener('keydown', (e) => {
+    if (!mouseOk()) return;
+    const n = Number(e.key); if (n >= 1 && n <= 9 && game.palette && game.palette[n - 1]) game.setColor(game.palette[n - 1].id);
+    if (e.key === 'Enter') game.finishReq();
+  });
+
+  function unlock() {
+    audio.unlock();
+    $('soundBtn').classList.remove('need'); $('soundBtn').textContent = '🔊 Suara aktif';
+    refreshTools();
+    if (game.mode === 'idle') audio.playMusic('musicIdle');
+  }
+  $('soundBtn').onclick = unlock;
+  $('fsBtn').onclick = () => { unlock(); document.documentElement.requestFullscreen?.(); };
+  addEventListener('pointerdown', unlock, { once: true });
+  addEventListener('keydown', unlock, { once: true });
+  // kalau browser sudah mengizinkan suara otomatis (mode kios), langsung aktif
+  setTimeout(() => { audio.ensureCtx(); if (audio.ctx && audio.ctx.state === 'running') unlock(); }, 300);
+</script>
+</body>
+</html>

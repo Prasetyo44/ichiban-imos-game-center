@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#111">
+<title>Spray Paint Challenge - Kaleng Semprot</title>
+<style>
+  :root { --primary: #d71920; --accent: #ffc400; --paint: #d71920; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff; background: radial-gradient(circle at 50% -10%, #3a3f55, #111320 70%); overscroll-behavior: none; }
+  .hidden { display: none !important; }
+  .wrap { max-width: 460px; margin: 0 auto; padding: 20px 16px 40px; }
+  .title { text-align: center; font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: -.01em; text-shadow: 0 3px 0 var(--primary); margin: 4px 0 14px; line-height: 1.05; }
+  .card { background: #fff; color: #1b1b2f; border-radius: 18px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .card p { color: #666; margin: 0 0 4px; }
+  label { display: block; font-weight: 700; margin: 14px 0 6px; }
+  input { font: inherit; width: 100%; padding: 13px 14px; border-radius: 10px; border: 1px solid #d0d0dc; color: #1b1b2f; background: #fff; font-size: 16px; }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 14px; padding: 15px 20px; font-weight: 800; background: var(--primary); color: #fff; }
+  button:disabled { opacity: .5; }
+  .full { width: 100%; margin-top: 18px; font-size: 19px; }
+  .err { background: #ffe3e8; color: #b0002a; padding: 10px 12px; border-radius: 10px; margin-top: 14px; }
+  .msg { text-align: center; padding: 26px 8px; }
+  .tpls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tp { border: 3px solid #e4e4ea; border-radius: 14px; padding: 8px 6px; text-align: center; cursor: pointer; background: #f4f5f8; }
+  .tp img { width: 100%; aspect-ratio: 12 / 7; object-fit: contain; display: block; margin-bottom: 4px; }
+  .tp span { font-size: 12px; font-weight: 700; color: #444; }
+  .tp.on { border-color: var(--primary); background: #fff2f2; }
+  .canhero { display: flex; justify-content: center; margin: 4px 0 -6px; }
+  .canhero img { height: 120px; filter: drop-shadow(0 10px 12px rgba(0,0,0,.5)); }
+  .start { width: 100%; font-size: 30px; padding: 26px; margin-top: 16px; letter-spacing: .06em; box-shadow: 0 7px 0 rgba(0,0,0,.35); }
+  .start:active { transform: translateY(4px); box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+  .howto { margin-top: 16px; line-height: 1.55; color: #ddd; font-size: 15px; }
+  .howto b { color: var(--accent); }
+
+  /* ===== Controller: kaleng semprot ===== */
+  #v-ctl { position: fixed; inset: 0; display: flex; flex-direction: column; padding: calc(8px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)); gap: 10px;
+           user-select: none; -webkit-user-select: none; touch-action: none; background: #111320; }
+  .bar { display: flex; justify-content: space-between; align-items: center; font-weight: 800; gap: 8px; }
+  .time { font-size: 32px; font-variant-numeric: tabular-nums; min-width: 84px; }
+  .time.warn { color: #ff5a5a; }
+  .meter { flex: 1; }
+  .meter .lbl { display: flex; justify-content: space-between; font-size: 12px; color: #bbb; font-weight: 700; }
+  .meter .tr { height: 10px; background: rgba(255,255,255,.12); border-radius: 6px; overflow: hidden; margin-top: 3px; }
+  .meter .fl { height: 100%; width: 0; background: #3ee07a; transition: width .25s; }
+  .score { font-size: 26px; color: var(--accent); text-align: right; min-width: 90px; }
+  .score small { display: block; font-size: 11px; color: #aaa; font-weight: 600; }
+  .padwrap { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+  .pad { position: relative; width: 100%; aspect-ratio: 12 / 7; max-height: 100%; border-radius: 18px; background: #2a2e38; overflow: hidden; touch-action: none;
+         border: 3px solid rgba(255,255,255,.18); background-image: radial-gradient(rgba(255,255,255,.06) 2px, transparent 2px); background-size: 18px 18px; }
+  .pad img { position: absolute; left: 6.897%; top: 6.897%; width: 86.207%; height: 86.207%; object-fit: contain; opacity: .85; pointer-events: none; }
+  .pad .dot { position: absolute; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 3px solid #fff; background: var(--paint); opacity: .85; pointer-events: none; display: none; box-shadow: 0 0 0 6px rgba(0,0,0,.25); }
+  .pad.on { border-color: var(--paint); }
+  .pad .hint { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: 13px; color: rgba(255,255,255,.7); pointer-events: none; }
+  .rot { text-align: center; font-size: 13px; color: #9aa0b4; }
+  @media (orientation: landscape) { .rot { display: none; } }
+  .colors { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .sw { width: 46px; height: 46px; border-radius: 50%; border: 3px solid rgba(255,255,255,.25); box-shadow: inset 0 -6px 0 rgba(0,0,0,.2); }
+  .sw.on { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 0 3px var(--accent); }
+  .bottom { display: flex; gap: 10px; align-items: center; }
+  .cname { flex: 1; font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .cname i { width: 18px; height: 18px; border-radius: 50%; background: var(--paint); display: inline-block; border: 2px solid #fff; }
+  .finish { background: #2f7d32; padding: 12px 16px; font-size: 16px; border-radius: 12px; }
+  .finish.confirm { background: #ff9800; }
+  .tiltbtn { display: none; height: 120px; border-radius: 26px; font-size: 30px; letter-spacing: .08em; background: linear-gradient(180deg, #ff4b4b, var(--primary)); box-shadow: 0 8px 0 #7d0a0e; touch-action: none; align-items: center; justify-content: center; font-weight: 900; }
+  .tiltbtn.press { transform: translateY(6px); box-shadow: 0 2px 0 #7d0a0e; filter: brightness(1.2); }
+  #v-ctl.tilt .tiltbtn { display: flex; }
+  .count { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.7); font-size: 120px; font-weight: 900; color: var(--accent); pointer-events: none; text-align: center; }
+  .count small { display: block; font-size: 20px; color: #fff; font-weight: 700; }
+  .flash { animation: flash .35s; } @keyframes flash { 30% { background: #5a2a00; } }
+  .flash2 { animation: flash2 .35s; } @keyframes flash2 { 30% { background: #5a0010; } }
+  .toast { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); background: rgba(0,0,0,.85); padding: 8px 14px; border-radius: 99px; font-weight: 800; font-size: 14px; pointer-events: none; white-space: nowrap; }
+  @media (orientation: landscape) and (max-height: 520px) {
+    #v-ctl { flex-direction: row; flex-wrap: wrap; }
+    .bar { width: 100%; }
+    .padwrap { flex: 1 1 70%; height: calc(100% - 60px); }
+    .side { width: 26%; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+    .bottom { flex-direction: column; align-items: stretch; }
+  }
+
+  .res { text-align: center; }
+  .res .big { font-size: 58px; font-weight: 900; color: var(--primary); line-height: 1.05; }
+  .res .gr { display: inline-grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 40px; font-weight: 900; margin-bottom: 6px; border: 4px solid #ffd54d; }
+  .res .rank { display: inline-block; background: var(--accent); color: #3b2a00; font-weight: 900; padding: 8px 16px; border-radius: 99px; margin-top: 12px; font-size: 18px; }
+  .res img { width: 100%; border-radius: 12px; margin-top: 12px; }
+  .res .st { color: #444; margin-top: 8px; font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="main">
+  <div class="title" id="title">SPRAY PAINT CHALLENGE</div>
+  <div id="v-loading" class="msg">Memuat…</div>
+  <div id="v-error" class="card hidden"><div class="msg" id="errText"></div></div>
+
+  <form id="v-form" class="card hidden" autocomplete="on">
+    <p>Isi data kamu, lalu HP ini jadi kaleng semprot.</p>
+    <label for="name">Nama</label>
+    <input id="name" required minlength="2" maxlength="40" autocomplete="name">
+    <div id="phoneBox">
+      <label for="phone">Nomor HP</label>
+      <input id="phone" type="tel" inputmode="tel" placeholder="08xxxxxxxxxx" autocomplete="tel">
+    </div>
+    <div id="extraBox" class="hidden">
+      <label for="extra" id="extraLabel"></label>
+      <input id="extra" maxlength="80">
+    </div>
+    <div id="tplBox" class="hidden">
+      <label>Pilih yang mau kamu cat</label>
+      <div class="tpls" id="tpls"></div>
+    </div>
+    <div class="err hidden" id="formErr"></div>
+    <button class="full" type="submit" id="submitBtn">Lanjut</button>
+  </form>
+
+  <div id="v-ready" class="hidden">
+    <div class="canhero"><img id="canImg" src="img/can-aerosol.png" alt=""></div>
+    <div class="card msg" style="padding:18px">
+      <div style="font-size:20px">Halo, <b id="pname"></b>!</div>
+      <div style="color:#666;margin-top:6px">Kamu akan mengecat: <b id="ptpl"></b></div>
+    </div>
+    <button class="start" id="startBtn">MULAI ▶</button>
+    <div class="howto" id="howto"></div>
+    <div class="err hidden" id="startErr"></div>
+  </div>
+
+  <div id="v-done" class="card res hidden">
+    <div class="gr" id="dgrade">A</div>
+    <div style="color:#666">Skor kamu</div>
+    <div class="big" id="dscore">0</div>
+    <div class="st" id="dstats"></div>
+    <div class="rank" id="drank"></div>
+    <img id="dshot" class="hidden" alt="Hasil cat">
+    <p style="margin-top:14px">Terima kasih sudah ikut! Lihat papan skor di layar.</p>
+  </div>
+</div>
+
+<div id="v-ctl" class="hidden">
+  <div class="bar">
+    <div class="time" id="ctime">0:45</div>
+    <div class="meter"><div class="lbl"><span>RATA</span><span id="crata">0%</span></div><div class="tr"><div class="fl" id="cbar"></div></div></div>
+    <div class="score"><span id="cscore">0</span><small>SKOR</small></div>
+  </div>
+  <div class="rot" id="rot">↻ Putar HP ke samping supaya area semprot lebih besar</div>
+  <div class="padwrap"><div class="pad" id="pad"><img id="padImg" alt=""><div class="dot" id="dot"></div><div class="hint" id="padHint">Sentuh &amp; geser di sini = semprot</div></div></div>
+  <div class="side">
+    <div class="tiltbtn" id="tiltBtn">TAHAN = SEMPROT</div>
+    <div class="colors" id="colors"></div>
+    <div class="bottom"><div class="cname"><i></i><span id="cname"></span></div><button class="finish hidden" id="finishBtn">✔ SELESAI</button></div>
+  </div>
+  <div class="count hidden" id="count"></div>
+  <div class="toast hidden" id="toast"></div>
+</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script src="audio.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const token = new URLSearchParams(location.search).get('t') || '';
+  const PKEY = 'spray_pid_' + token;
+  let pid = null;
+  try { pid = sessionStorage.getItem(PKEY); } catch {}
+  let chosenTpl = null, colors = [], colorId = null, duration = 45, allowFinish = true, controlMode = 'pad', phoneSound = true;
+  const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io', transports: ['websocket', 'polling'] });
+  const audio = new SprayAudio({ only: ['sprayLoop', 'sprayStart', 'beep', 'go'] });
+  audio.setConfig({ musicOn: false, sfxVolume: 60 });
+  const GRADES = { S: 'Pengecat Pro', A: 'Bengkel Juara', B: 'Lumayan Rapi', C: 'Perlu Latihan', D: 'Masih Belepotan' };
+
+  function view(id) {
+    for (const v of ['v-loading', 'v-error', 'v-form', 'v-ready', 'v-done']) $(v).classList.toggle('hidden', v !== id);
+    $('v-ctl').classList.toggle('hidden', id !== 'v-ctl');
+    $('main').classList.toggle('hidden', id === 'v-ctl');
+  }
+  function fail(m) { $('errText').textContent = m; view('v-error'); }
+  function applyBranding(b) {
+    if (!b) return;
+    document.documentElement.style.setProperty('--primary', b.primaryColor);
+    document.documentElement.style.setProperty('--accent', b.accentColor);
+    $('title').textContent = b.title; document.title = b.title;
+    if (b.canImage) $('canImg').src = b.canImage;
+    if (b.colors && b.colors.length) { colors = b.colors; renderColors(); }
+    if (b.sound) { phoneSound = b.sound.phoneSound !== false; audio.setConfig({ sfxOn: phoneSound }); }
+  }
+  function renderColors() {
+    if (!colors.find((c) => c.id === colorId)) colorId = colors[0] && colors[0].id;
+    $('colors').classList.toggle('hidden', colors.length < 2);
+    $('colors').innerHTML = colors.map((c) => `<div class="sw ${c.id === colorId ? 'on' : ''}" data-c="${c.id}" style="background:${c.hex}" title=""></div>`).join('');
+    const c = colors.find((x) => x.id === colorId);
+    if (c) { document.documentElement.style.setProperty('--paint', c.hex); $('cname').textContent = c.name; }
+  }
+  $('colors').addEventListener('pointerdown', (e) => {
+    const id = e.target.dataset && e.target.dataset.c; if (!id) return;
+    colorId = id; renderColors(); socket.emit('color', { pid, c: id });
+    navigator.vibrate && navigator.vibrate(15);
+  });
+  function renderTpls(list) {
+    $('tpls').innerHTML = '';
+    list.forEach((t, i) => {
+      const d = document.createElement('div');
+      d.className = 'tp' + (i === 0 ? ' on' : '');
+      d.innerHTML = '<img alt=""><span></span>';
+      d.querySelector('img').src = t.src; d.querySelector('span').textContent = t.name;
+      d.onclick = () => { chosenTpl = t.id; [...$('tpls').children].forEach((c) => c.classList.remove('on')); d.classList.add('on'); };
+      $('tpls').appendChild(d);
+    });
+    chosenTpl = list[0] && list[0].id;
+  }
+  function setTemplate(t) { if (!t) return; $('padImg').src = t.src; $('ptpl').textContent = t.name; }
+  function setHowto() {
+    $('howto').innerHTML = controlMode === 'tilt'
+      ? '📱 <b>Miringkan HP</b> untuk membidik, <b>tahan tombol merah</b> untuk menyemprot.<br>'
+      : '👆 <b>Sentuh &amp; geser</b> di gambar motor = menyemprot. Lepas jari = berhenti.<br>';
+    $('howto').innerHTML += '🎨 Tutup semua bodi <b>serata mungkin</b>.<br>🚫 Jangan <b>meleber</b> keluar bodi, jangan diam terlalu lama di satu titik (cat <b>meleleh</b>).<br>🔊 Nyalakan suara HP biar lebih seru!';
+  }
+
+  function showDone(r) {
+    $('dscore').textContent = Number(r.score).toLocaleString('id-ID');
+    $('dgrade').textContent = r.grade || '-';
+    $('dstats').textContent = `${GRADES[r.grade] || ''} · rata ${r.rata}% · meleber ${r.overspray}% · meleleh ${r.drip}%`;
+    $('drank').textContent = r.rank ? `Peringkat #${r.rank}` : r.test ? 'Uji coba' : 'Skor terbaikmu sebelumnya lebih tinggi';
+    $('dshot').classList.toggle('hidden', !r.snapshot); if (r.snapshot) $('dshot').src = r.snapshot;
+    view('v-done');
+  }
+
+  function check() {
+    socket.emit('play:check', { token, pid }, (res) => {
+      applyBranding(res.branding);
+      controlMode = res.controlMode || 'pad'; allowFinish = res.allowFinishEarly !== false; setHowto();
+      if (!res.ok) return fail(res.error);
+      if (res.stage === 'form') {
+        $('phoneBox').classList.toggle('hidden', !res.askPhone);
+        $('phone').required = !!res.askPhone;
+        $('extraBox').classList.toggle('hidden', !res.extraFieldLabel);
+        $('extraLabel').textContent = res.extraFieldLabel || '';
+        $('extra').required = !!res.extraFieldLabel;
+        const choose = res.templateMode === 'choose' && res.branding.templates.length > 1;
+        $('tplBox').classList.toggle('hidden', !choose);
+        if (choose) renderTpls(res.branding.templates);
+        view('v-form');
+      } else if (res.stage === 'ready') { $('pname').textContent = res.name; setTemplate(res.template); duration = res.durationSec; view('v-ready'); }
+      else if (res.stage === 'controller') { setTemplate(res.template); duration = res.durationSec; enterController(); }
+      else if (res.stage === 'done') showDone(res.result);
+    });
+  }
+  socket.on('connect', check);
+
+  $('v-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    $('formErr').classList.add('hidden');
+    $('submitBtn').disabled = true;
+    audio.unlock();
+    socket.emit('play:register', { token, name: $('name').value, phone: $('phone').value, extra: $('extra').value, templateId: chosenTpl }, (res) => {
+      $('submitBtn').disabled = false;
+      if (!res.ok) { $('formErr').textContent = res.error; $('formErr').classList.remove('hidden'); return; }
+      pid = res.pid; duration = res.durationSec;
+      try { sessionStorage.setItem(PKEY, pid); } catch {}
+      $('pname').textContent = res.name; setTemplate(res.template);
+      view('v-ready');
+    });
+  });
+
+  function enterController() {
+    view('v-ctl');
+    $('v-ctl').classList.toggle('tilt', controlMode === 'tilt');
+    $('finishBtn').classList.toggle('hidden', !allowFinish);
+    $('ctime').textContent = fmt(duration);
+    renderColors();
+    if (colorId) socket.emit('color', { pid, c: colorId });
+    if (controlMode === 'tilt') startTilt();
+  }
+  const fmt = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+
+  $('startBtn').onclick = async () => {
+    $('startBtn').disabled = true;
+    audio.unlock();
+    if (controlMode === 'tilt') await askTiltPermission();
+    socket.emit('play:start', { pid }, (res) => {
+      $('startBtn').disabled = false;
+      if (!res.ok) { $('startErr').textContent = res.error; $('startErr').classList.remove('hidden'); return; }
+      duration = res.durationSec;
+      enterController();
+      let n = res.countdown;
+      if (n > 0) {
+        const show = () => { $('count').innerHTML = `${n}<small>Kocok kalengnya… lihat layar besar!</small>`; };
+        $('count').classList.remove('hidden'); show();
+        const iv = setInterval(() => { n--; if (n <= 0) { clearInterval(iv); $('count').classList.add('hidden'); } else show(); }, 1000);
+        // kocok = getar
+        navigator.vibrate && navigator.vibrate([60, 60, 60, 60, 60, 60, 60, 60, 60]);
+      }
+    });
+  };
+
+  // ===== Mode sentuh: posisi jari di gambar = posisi semprot di TV =====
+  let spraying = false, lastSend = 0, pendingAim = null, aimX = 0.5, aimY = 0.5;
+  function sendAim(x, y, s, force) {
+    aimX = x; aimY = y;
+    const now = performance.now();
+    pendingAim = { pid, x, y, s };
+    if (force || now - lastSend > 28) { lastSend = now; socket.volatile.emit('aim', pendingAim); pendingAim = null; }
+  }
+  setInterval(() => { if (pendingAim) { socket.volatile.emit('aim', pendingAim); pendingAim = null; lastSend = performance.now(); } }, 33);
+  // kirim ulang status semprot berkala (kalau ada paket hilang)
+  setInterval(() => { if (!$('v-ctl').classList.contains('hidden') && spraying) socket.volatile.emit('aim', { pid, x: aimX, y: aimY, s: true }); }, 200);
+
+  function setSpraying(on) {
+    if (spraying === on) return;
+    spraying = on;
+    $('pad').classList.toggle('on', on);
+    if (phoneSound) audio.sprayOn(on, 0.5);
+    if (on && navigator.vibrate) navigator.vibrate(20);
+  }
+  const pad = $('pad');
+  let padPointer = null;
+  function padPos(e) { const r = pad.getBoundingClientRect(); return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)), r }; }
+  function showDot(p) { const d = $('dot'); d.style.display = 'block'; d.style.left = p.x * 100 + '%'; d.style.top = p.y * 100 + '%'; }
+  pad.addEventListener('pointerdown', (e) => {
+    if (controlMode === 'tilt') return;
+    e.preventDefault(); padPointer = e.pointerId; try { pad.setPointerCapture(e.pointerId); } catch {}
+    const p = padPos(e); showDot(p); setSpraying(true); sendAim(p.x, p.y, true, true);
+    $('padHint').classList.add('hidden');
+  });
+  pad.addEventListener('pointermove', (e) => {
+    if (controlMode === 'tilt' || e.pointerId !== padPointer) return;
+    e.preventDefault(); const p = padPos(e); showDot(p); sendAim(p.x, p.y, true);
+  });
+  const padUp = (e) => {
+    if (controlMode === 'tilt' || e.pointerId !== padPointer) return;
+    padPointer = null; const p = padPos(e); setSpraying(false); sendAim(p.x, p.y, false, true); $('dot').style.display = 'none';
+  };
+  pad.addEventListener('pointerup', padUp); pad.addEventListener('pointercancel', padUp);
+  document.addEventListener('touchmove', (e) => { if (!$('v-ctl').classList.contains('hidden')) e.preventDefault(); }, { passive: false });
+  document.addEventListener('contextmenu', (e) => { if (!$('v-ctl').classList.contains('hidden')) e.preventDefault(); });
+
+  // ===== Mode miring (gyro): butuh HTTPS. Kalau sensor tidak ada, otomatis kembali ke mode sentuh =====
+  let tiltBase = null, tiltOk = false;
+  async function askTiltPermission() {
+    try { if (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) await DeviceOrientationEvent.requestPermission(); } catch {}
+  }
+  function onOrient(e) {
+    if (e.beta === null || e.gamma === null) return;
+    tiltOk = true;
+    if (!tiltBase) tiltBase = { b: e.beta, g: e.gamma };
+    const x = Math.min(1, Math.max(0, 0.5 + (e.gamma - tiltBase.g) / 50));
+    const y = Math.min(1, Math.max(0, 0.5 + (e.beta - tiltBase.b) / 36));
+    showDot({ x, y }); sendAim(x, y, spraying);
+  }
+  function startTilt() {
+    tiltBase = null; tiltOk = false;
+    addEventListener('deviceorientation', onOrient);
+    $('padHint').textContent = 'Miringkan HP untuk membidik · ketuk di sini untuk kalibrasi ulang';
+    setTimeout(() => {
+      if (!tiltOk) {
+        removeEventListener('deviceorientation', onOrient);
+        controlMode = 'pad'; $('v-ctl').classList.remove('tilt');
+        $('padHint').textContent = 'Sensor miring tidak tersedia. Sentuh & geser di sini = semprot';
+        toast('Mode sentuh dipakai');
+      }
+    }, 1500);
+  }
+  pad.addEventListener('click', () => { if (controlMode === 'tilt') tiltBase = null; });
+  const tb = $('tiltBtn');
+  tb.addEventListener('pointerdown', (e) => { e.preventDefault(); tb.classList.add('press'); setSpraying(true); sendAim(aimX, aimY, true, true); });
+  const tbUp = (e) => { e.preventDefault(); tb.classList.remove('press'); setSpraying(false); sendAim(aimX, aimY, false, true); };
+  tb.addEventListener('pointerup', tbUp); tb.addEventListener('pointercancel', tbUp); tb.addEventListener('pointerleave', tbUp);
+
+  // ===== Selesai lebih cepat (dapat bonus waktu) =====
+  let confirmTimer = null;
+  $('finishBtn').onclick = () => {
+    const b = $('finishBtn');
+    if (!b.classList.contains('confirm')) { b.classList.add('confirm'); b.textContent = 'Yakin? Tap lagi'; clearTimeout(confirmTimer); confirmTimer = setTimeout(() => { b.classList.remove('confirm'); b.textContent = '✔ SELESAI'; }, 2500); return; }
+    b.classList.remove('confirm'); b.textContent = '✔ SELESAI';
+    setSpraying(false); socket.emit('finish', { pid });
+  };
+
+  function toast(m) { $('toast').textContent = m; $('toast').classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => $('toast').classList.add('hidden'), 1500); }
+
+  socket.on('game:running', () => { $('count').classList.add('hidden'); navigator.vibrate && navigator.vibrate(150); });
+  socket.on('game:tick', (d) => {
+    $('ctime').textContent = fmt(d.t); $('ctime').classList.toggle('warn', d.t <= 10);
+    $('crata').textContent = d.rata + '%'; $('cbar').style.width = Math.min(100, d.rata) + '%';
+    $('cscore').textContent = Number(d.score).toLocaleString('id-ID');
+  });
+  socket.on('game:event', (d) => {
+    const el = $('v-ctl');
+    const cls = d.type === 'drip' ? 'flash' : 'flash2';
+    el.classList.remove('flash', 'flash2'); void el.offsetWidth; el.classList.add(cls);
+    navigator.vibrate && navigator.vibrate(d.type === 'drip' ? [40, 30, 40] : [90]);
+    toast(d.type === 'drip' ? '💧 Terlalu tebal, cat meleleh!' : '⚠️ Meleber! Arahkan ke bodi');
+  });
+  socket.on('game:over', (r) => { setSpraying(false); removeEventListener('deviceorientation', onOrient); setTimeout(() => showDone(r), 900); });
+  socket.on('screen:lost', () => { setSpraying(false); fail('Layar TV terputus. Silakan scan ulang QR di layar.'); });
+  socket.on('branding', applyBranding);
+</script>
+</body>
+</html>

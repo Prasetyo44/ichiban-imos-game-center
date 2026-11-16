@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spin Wheel - Admin</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { background: #f3f3f8; color: var(--text); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  header h1 { font-size: 22px; }
+  .card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+  .card h2 { font-size: 17px; margin-bottom: 4px; }
+  .card .desc { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  th { font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: .03em; }
+  td input, td select { padding: 7px 8px; }
+  td input[type=color] { width: 44px; height: 36px; padding: 2px; }
+  td input[type=checkbox] { width: 20px; height: 20px; }
+  .num { width: 80px; }
+  .btn-sm { padding: 7px 12px; font-size: 13px; border-radius: 8px; }
+  .ghost { background: #ececf4; color: var(--text); }
+  .danger { background: #fde2e6; color: #b0002a; }
+  .ok { background: var(--ok); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+  .row > div { flex: 1 1 180px; }
+  .row label { margin-top: 0; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+  .pill.win { background: #d8f3ee; color: #1d6f65; }
+  .pill.lose { background: #eee; color: #666; }
+  .pill.wait { background: #fff2cc; color: #8a6200; }
+  .pill.forced { background: #efe1fb; color: #6a2a9a; }
+  .scroll { overflow-x: auto; }
+  .info { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .info div { background: #f7f7fb; border-radius: 10px; padding: 12px; }
+  .info b { display: block; font-size: 22px; }
+  .info a { word-break: break-all; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1b1b2f; color: #fff; padding: 10px 18px; border-radius: 10px; z-index: 9; }
+  #login { max-width: 360px; margin: 12vh auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <form id="login" class="card">
+    <h2>Masuk Admin</h2>
+    <label for="pw">Password</label>
+    <input id="pw" type="password" required autofocus>
+    <button style="width:100%;margin-top:14px">Masuk</button>
+    <div class="desc" id="loginErr" style="color:#b0002a;margin-top:10px"></div>
+  </form>
+
+  <div id="app" class="hidden">
+    <header>
+      <h1>Panel Admin Spin Wheel</h1>
+      <div class="row" style="flex:0 0 auto">
+        <button class="btn-sm ghost" onclick="load()">Muat ulang</button>
+        <button class="btn-sm ghost" onclick="logout()">Keluar</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="info">
+        <div>Buka di laptop/TV<br><a id="tvLink" target="_blank"></a></div>
+        <div>Layar terhubung<b id="iScreens">0</b></div>
+        <div>Peserta<b id="iTotal">0</b></div>
+        <div>Pemenang hadiah<b id="iWins">0</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Pengaturan</h2>
+      <div class="row">
+        <div><label for="sTitle">Judul di layar</label><input id="sTitle" maxlength="60"></div>
+        <div style="flex:0 0 auto"><label><input type="checkbox" id="sOne" style="width:auto"> 1 nomor HP hanya boleh spin 1 kali</label></div>
+        <div style="flex:0 0 auto"><button class="btn-sm" onclick="saveSettings()">Simpan</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Hadiah &amp; Peluang</h2>
+      <p class="desc">Peluang dihitung dari bobot. Contoh: bobot 10 dari total 100 = 10%. Stok kosong berarti tidak terbatas; hadiah dengan stok 0 tidak akan keluar dari putaran acak. Urutan baris = urutan segmen di roda.</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Warna</th><th>Nama segmen</th><th>Bobot</th><th>Peluang</th><th>Stok</th><th>Hadiah?</th><th>Keluar</th><th></th></tr></thead>
+          <tbody id="prizeRows"></tbody>
+        </table>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div style="flex:0 0 auto"><button class="btn-sm ghost" onclick="addPrize()">+ Tambah segmen</button></div>
+        <div style="flex:0 0 auto"><button class="btn-sm" onclick="savePrizes()">Simpan hadiah</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Atur hasil peserta tertentu</h2>
+      <p class="desc">Masukkan nomor HP peserta sebelum dia scan. Saat nomor itu memutar roda, hasilnya otomatis menjadi hadiah yang dipilih (sekali pakai). Ini mengabaikan stok dan bobot.</p>
+      <div class="row">
+        <div><label for="oPhone">Nomor HP</label><input id="oPhone" type="tel" placeholder="08xxxxxxxxxx"></div>
+        <div><label for="oPrize">Hasil</label><select id="oPrize"></select></div>
+        <div><label for="oNote">Catatan (opsional)</label><input id="oNote" placeholder="mis. tamu VIP"></div>
+        <div style="flex:0 0 auto"><button class="btn-sm" onclick="addOverride()">Tambahkan</button></div>
+      </div>
+      <div class="scroll" style="margin-top:12px">
+        <table>
+          <thead><tr><th>Nomor HP</th><th>Hasil</th><th>Catatan</th><th>Status</th><th></th></tr></thead>
+          <tbody id="ovRows"></tbody>
+        </table>
+      </div>
+      <hr style="border:0;border-top:1px solid #eee;margin:18px 0">
+      <h2>Putaran berikutnya</h2>
+      <p class="desc">Siapa pun peserta yang memutar berikutnya akan mendapat hasil ini (sekali pakai). Berguna jika nomor HP peserta belum diketahui.</p>
+      <div class="row">
+        <div><select id="nextPrize"></select></div>
+        <div style="flex:0 0 auto"><button class="btn-sm" onclick="setNext()">Simpan</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Data peserta</h2>
+      <div class="row" style="margin-bottom:10px">
+        <div><input id="search" placeholder="Cari nama / nomor / alamat / hadiah" oninput="renderParticipants()"></div>
+        <div style="flex:0 0 auto"><button class="btn-sm ok" onclick="exportCsv()">Ekspor CSV (Excel)</button></div>
+        <div style="flex:0 0 auto"><button class="btn-sm danger" onclick="resetAll()">Hapus semua data peserta</button></div>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Waktu</th><th>Nama</th><th>No HP</th><th>Alamat</th><th>Hasil</th><th></th></tr></thead>
+          <tbody id="pRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let PW = '';
+  try { PW = sessionStorage.getItem('spin_admin_pw') || ''; } catch {}
+  let state = null;
+  let prizesDraft = [];
+  let socket = null;
+  let prizesDirty = false;
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (iso) => iso ? new Date(iso).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : '';
+  function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2200); }
+
+  async function api(method, url, body) {
+    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'x-admin-password': PW }, body: body ? JSON.stringify(body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { if (r.status === 401) logout(); throw new Error(j.error || 'Gagal'); }
+    return j;
+  }
+
+  $('login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    PW = $('pw').value;
+    try { await load(); try { sessionStorage.setItem('spin_admin_pw', PW); } catch {} }
+    catch (err) { $('loginErr').textContent = err.message; }
+  });
+  function logout() { PW = ''; try { sessionStorage.removeItem('spin_admin_pw'); } catch {} $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+
+  async function load() {
+    state = await api('GET', 'api/admin/state');
+    $('login').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    if (!socket) {
+      socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io' });
+      socket.on('connect', () => socket.emit('admin:join', PW));
+      socket.on('admin:refresh', () => refresh());
+    }
+    prizesDraft = state.prizes.map((p) => ({ ...p }));
+    render();
+  }
+  async function refresh() {
+    // muat ulang tanpa menimpa draf hadiah yang sedang diedit
+    state = await api('GET', 'api/admin/state');
+    renderInfo(); renderOverrides(); renderParticipants();
+    // stok berubah saat ada pemenang: segarkan tabel jika admin tidak sedang mengedit
+    if (!prizesDirty) { prizesDraft = state.prizes.map((p) => ({ ...p })); renderPrizes(); } else renderPrizeStats();
+  }
+
+  function render() {
+    $('sTitle').value = state.settings.title;
+    $('sOne').checked = state.settings.onePerPhone;
+    renderInfo(); renderPrizes(); renderOverrides(); renderParticipants();
+  }
+  function renderInfo() {
+    const tv = state.baseUrl + '/tv';
+    $('tvLink').href = tv; $('tvLink').textContent = tv;
+    $('iScreens').textContent = state.screens;
+    $('iTotal').textContent = state.participants.length;
+    $('iWins').textContent = state.participants.filter((p) => p.isWin).length;
+  }
+
+  function prizeOptions(sel, withNone) {
+    return (withNone ? '<option value="">— tidak diatur (acak normal) —</option>' : '') +
+      state.prizes.map((p) => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  }
+
+  function renderPrizes() {
+    const total = prizesDraft.filter((p) => p.stock === null || p.stock === '' || Number(p.stock) > 0).reduce((s, p) => s + (Number(p.weight) || 0), 0);
+    $('prizeRows').innerHTML = prizesDraft.map((p, i) => {
+      const avail = p.stock === null || p.stock === '' || Number(p.stock) > 0;
+      const pct = total && avail ? ((Number(p.weight) || 0) / total * 100) : 0;
+      return `<tr>
+        <td><input type="color" value="${p.color}" onchange="prizesDraft[${i}].color=this.value"></td>
+        <td><input value="${esc(p.name)}" maxlength="40" oninput="prizesDraft[${i}].name=this.value"></td>
+        <td><input class="num" type="number" min="0" step="any" value="${p.weight}" oninput="prizesDraft[${i}].weight=this.value;renderPct()"></td>
+        <td class="pct" data-i="${i}">${pct.toFixed(1)}%</td>
+        <td><input class="num" type="number" min="0" placeholder="∞" value="${p.stock ?? ''}" oninput="prizesDraft[${i}].stock=this.value===''?null:this.value;renderPct()"></td>
+        <td><input type="checkbox" ${p.isWin ? 'checked' : ''} onchange="prizesDraft[${i}].isWin=this.checked" title="Centang jika ini hadiah (bukan zonk)"></td>
+        <td class="won" data-id="${p.id}"></td>
+        <td style="white-space:nowrap">
+          <button class="btn-sm ghost" onclick="move(${i},-1)" title="Naik">↑</button>
+          <button class="btn-sm ghost" onclick="move(${i},1)" title="Turun">↓</button>
+          <button class="btn-sm danger" onclick="delPrize(${i})">Hapus</button>
+        </td></tr>`;
+    }).join('');
+    renderPrizeStats();
+  }
+  function renderPct() {
+    const total = prizesDraft.filter((p) => p.stock === null || p.stock === '' || Number(p.stock) > 0).reduce((s, p) => s + (Number(p.weight) || 0), 0);
+    document.querySelectorAll('.pct').forEach((td) => {
+      const p = prizesDraft[td.dataset.i];
+      const avail = p.stock === null || p.stock === '' || Number(p.stock) > 0;
+      td.textContent = (total && avail ? (Number(p.weight) || 0) / total * 100 : 0).toFixed(1) + '%';
+    });
+  }
+  function renderPrizeStats() {
+    document.querySelectorAll('.won').forEach((td) => {
+      td.textContent = state.participants.filter((x) => x.prizeId === td.dataset.id).length + '×';
+    });
+  }
+  const COLORS = ['#e63946', '#457b9d', '#f4a261', '#2a9d8f', '#8e44ad', '#f1c40f', '#e76f51', '#264653'];
+  function addPrize() { prizesDirty = true; prizesDraft.push({ name: 'Hadiah baru', color: COLORS[prizesDraft.length % COLORS.length], weight: 10, stock: null, isWin: true }); renderPrizes(); }
+  function delPrize(i) { prizesDirty = true; if (prizesDraft.length <= 2) return toast('Minimal 2 segmen'); prizesDraft.splice(i, 1); renderPrizes(); }
+  function move(i, d) { prizesDirty = true; const j = i + d; if (j < 0 || j >= prizesDraft.length) return; [prizesDraft[i], prizesDraft[j]] = [prizesDraft[j], prizesDraft[i]]; renderPrizes(); }
+  async function savePrizes() {
+    try { const r = await api('PUT', 'api/admin/prizes', { prizes: prizesDraft }); state.prizes = r.prizes; prizesDraft = r.prizes.map((p) => ({ ...p })); prizesDirty = false; renderPrizes(); renderOverrides(); toast('Hadiah disimpan'); }
+    catch (e) { toast(e.message); }
+  }
+
+  async function saveSettings() {
+    try { await api('PUT', 'api/admin/settings', { title: $('sTitle').value, onePerPhone: $('sOne').checked }); toast('Pengaturan disimpan'); }
+    catch (e) { toast(e.message); }
+  }
+
+  function renderOverrides() {
+    const cur = $('oPrize').value;
+    $('oPrize').innerHTML = prizeOptions(cur || (state.prizes.find((p) => p.isWin) || {}).id);
+    $('nextPrize').innerHTML = prizeOptions(state.nextSpinPrizeId, true);
+    const name = (id) => (state.prizes.find((p) => p.id === id) || {}).name || '(hadiah dihapus)';
+    const list = [...state.overrides].sort((a, b) => (!!a.usedAt - !!b.usedAt) || b.createdAt.localeCompare(a.createdAt));
+    $('ovRows').innerHTML = list.length ? list.map((o) => `<tr>
+      <td>${esc(o.phone)}</td><td>${esc(name(o.prizeId))}</td><td>${esc(o.note)}</td>
+      <td>${o.usedAt ? `<span class="pill lose">terpakai ${fmt(o.usedAt)}</span>` : '<span class="pill wait">menunggu</span>'}</td>
+      <td><button class="btn-sm danger" onclick="delOverride('${o.id}')">Hapus</button></td></tr>`).join('')
+      : '<tr><td colspan="5" style="color:#999">Belum ada pengaturan.</td></tr>';
+  }
+  async function addOverride() {
+    try { await api('POST', 'api/admin/overrides', { phone: $('oPhone').value, prizeId: $('oPrize').value, note: $('oNote').value }); $('oPhone').value = ''; $('oNote').value = ''; await refresh(); toast('Hasil peserta diatur'); }
+    catch (e) { toast(e.message); }
+  }
+  async function delOverride(id) { await api('DELETE', 'api/admin/overrides/' + id); refresh(); }
+  async function setNext() {
+    try { await api('PUT', 'api/admin/next-spin', { prizeId: $('nextPrize').value || null }); await refresh(); toast($('nextPrize').value ? 'Putaran berikutnya diatur' : 'Pengaturan putaran berikutnya dihapus'); }
+    catch (e) { toast(e.message); }
+  }
+
+  function renderParticipants() {
+    const q = $('search').value.toLowerCase();
+    const list = state.participants.filter((p) => !q || [p.name, p.phone, p.address, p.prizeName].join(' ').toLowerCase().includes(q));
+    $('pRows').innerHTML = list.length ? list.map((p) => {
+      let res = '<span class="pill wait">belum spin</span>';
+      if (p.spunAt) res = `<span class="pill ${p.isWin ? 'win' : 'lose'}">${esc(p.prizeName)}</span>` + (p.source && p.source.startsWith('diatur') ? ' <span class="pill forced" title="' + esc(p.source) + '">diatur</span>' : '');
+      return `<tr><td>${fmt(p.createdAt)}</td><td>${esc(p.name)}</td><td>${esc(p.phone)}</td><td>${esc(p.address)}</td><td>${res}</td>
+        <td><button class="btn-sm danger" onclick="delParticipant('${p.id}')">Hapus</button></td></tr>`;
+    }).join('') : '<tr><td colspan="6" style="color:#999">Belum ada peserta.</td></tr>';
+  }
+  async function delParticipant(id) { if (!confirm('Hapus data peserta ini?')) return; await api('DELETE', 'api/admin/participants/' + id); refresh(); }
+  async function resetAll() {
+    if (!confirm('Hapus SEMUA data peserta? Ekspor CSV dulu jika perlu.')) return;
+    await api('POST', 'api/admin/reset', {}); refresh(); toast('Data peserta dihapus');
+  }
+  async function exportCsv() {
+    const r = await fetch('api/admin/export.csv', { headers: { 'x-admin-password': PW } });
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'peserta-spin-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+  }
+
+  $('prizeRows').addEventListener('input', () => { prizesDirty = true; });
+  $('prizeRows').addEventListener('change', () => { prizesDirty = true; });
+  if (PW) load().catch(() => logout());
+</script>
+</body>
+</html>

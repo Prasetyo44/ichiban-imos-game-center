@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ichiban Drag Race - Layar</title>
+<style>
+  :root { --primary: #d71920; --accent: #ffc400; --l1: #e3262d; --l2: #1f7bff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff; }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+  .hidden { display: none !important; }
+  .ov { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .dim { background: linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.45) 50%, rgba(0,0,0,.75)); }
+  .card { background: rgba(10,12,22,.86); backdrop-filter: blur(6px); border: 2px solid rgba(255,255,255,.12); border-radius: 2.2vh; box-shadow: 0 2vh 6vh rgba(0,0,0,.5); }
+
+  .lobby { display: grid; grid-template-columns: 1fr 34vw; grid-template-rows: auto 1fr auto; gap: 2.5vh 2vw; width: 100%; height: 100%; padding: 4vh 3vw 6vh; }
+  .head { grid-column: 1 / -1; display: flex; align-items: center; gap: 1.6vw; }
+  .head img { height: 9vh; }
+  .title { font-size: 8.5vh; font-weight: 900; line-height: .95; letter-spacing: -.02em; text-transform: uppercase; font-style: italic;
+           text-shadow: 0 .6vh 0 var(--primary), 0 1.2vh 2vh rgba(0,0,0,.6); }
+  .sub { font-size: 2.8vh; opacity: .92; margin-top: .8vh; }
+  .lanes { display: flex; gap: 2vw; align-items: stretch; }
+  .lane { flex: 1; padding: 2.4vh 1.6vw; display: flex; flex-direction: column; align-items: center; text-align: center; border-top: 1.2vh solid var(--lc); }
+  .lane h3 { margin: 0 0 1.6vh; font-size: 3.6vh; font-weight: 900; color: var(--lc); letter-spacing: .04em; }
+  .qr { background: #fff; padding: 1.1vh; border-radius: 1.6vh; }
+  .qr img { width: 27vh; height: 27vh; display: block; }
+  .lane .st { font-size: 3.4vh; font-weight: 800; margin-top: 2vh; min-height: 9vh; display: flex; flex-direction: column; justify-content: center; }
+  .lane .st small { display: block; font-size: 2.2vh; font-weight: 500; opacity: .8; margin-top: .6vh; }
+  .lane .big { font-size: 5.5vh; font-weight: 900; text-transform: uppercase; }
+  .lane .ok { color: #2bff88; }
+  .lane .ph { width: 29vh; height: 29vh; border-radius: 1.6vh; display: grid; place-items: center; font-size: 12vh; background: rgba(255,255,255,.06); }
+  .url { font-size: 1.4vh; opacity: .5; margin-top: 1vh; word-break: break-all; }
+  .vs { align-self: center; font-size: 6vh; font-weight: 900; color: var(--accent); font-style: italic; text-shadow: 0 .5vh 0 var(--primary); }
+  .wait { text-align: center; font-size: 3vh; font-weight: 800; color: var(--accent); margin-top: 1.5vh; }
+  .how { grid-column: 1 / -1; display: flex; gap: 1.2vw; justify-content: center; font-size: 2.3vh; }
+  .how span { background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.15); padding: 1vh 1.4vw; border-radius: 99px; }
+  .how b { color: var(--accent); }
+
+  .lb { padding: 2.6vh 1.6vw; align-self: stretch; overflow: hidden; }
+  .lb h2 { margin: 0 0 1.6vh; font-size: 3.6vh; }
+  .row { display: grid; grid-template-columns: 5vh 1fr auto; align-items: center; gap: .8vw; padding: .8vh .8vw; border-radius: 1.2vh; font-size: 2.5vh; }
+  .row:nth-child(odd) { background: rgba(255,255,255,.06); }
+  .row .rk { width: 4.4vh; height: 4.4vh; border-radius: 50%; display: grid; place-items: center; font-weight: 900; background: rgba(255,255,255,.15); }
+  .row.r1 .rk { background: #ffcf33; color: #4a3500; } .row.r2 .rk { background: #d9dde3; color: #333; } .row.r3 .rk { background: #e09a5a; color: #3b1d00; }
+  .row .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .nm small { display: block; font-weight: 400; opacity: .65; font-size: 1.7vh; }
+  .row .sc { font-weight: 900; color: var(--accent); font-size: 3vh; }
+  .row.me { outline: .4vh solid var(--accent); background: rgba(255,196,0,.18); }
+  .empty { opacity: .7; font-size: 2.4vh; padding: 2vh 0; }
+  .footer { position: fixed; left: 0; right: 0; bottom: 1.4vh; text-align: center; font-size: 1.9vh; opacity: .75; }
+
+  /* hasil */
+  .result { display: grid; grid-template-columns: 1fr 32vw; gap: 2vw; padding: 3.5vh 2.5vw; width: min(96vw, 185vh); }
+  .winner { font-size: 7vh; font-weight: 900; font-style: italic; text-transform: uppercase; line-height: 1.05; text-shadow: 0 .6vh 0 rgba(0,0,0,.5); }
+  .rcols { display: flex; gap: 1.5vw; margin-top: 2.5vh; }
+  .rc { flex: 1; border-radius: 1.8vh; padding: 2vh 1.4vw; background: rgba(255,255,255,.06); border-top: 1vh solid var(--lc); }
+  .rc.win { background: rgba(43,255,136,.12); outline: .4vh solid #2bff88; }
+  .rc .nm { font-size: 3.6vh; font-weight: 900; text-transform: uppercase; }
+  .rc .tag { display: inline-block; font-size: 2vh; font-weight: 900; padding: .4vh 1vw; border-radius: 99px; background: var(--lc); margin-bottom: 1vh; }
+  .rc .pts { font-size: 9vh; font-weight: 900; line-height: 1; margin: 1.2vh 0; color: var(--accent); }
+  .rc .pts small { font-size: 2.2vh; color: #fff; opacity: .7; font-weight: 600; margin-left: .5vw; }
+  .rc table { width: 100%; font-size: 2.4vh; border-collapse: collapse; }
+  .rc td { padding: .4vh 0; } .rc td:last-child { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; gap: .5vw; flex-wrap: wrap; margin-top: 1vh; }
+  .chip { font-size: 1.7vh; font-weight: 900; padding: .4vh .7vw; border-radius: 99px; color: #111; }
+  .chip.perfect { background: #2bff88; } .chip.bagus { background: #ffd23f; } .chip.cepat { background: #ff9d3f; } .chip.telat { background: #ff4d4d; color: #fff; }
+  .badge { display: inline-block; margin-top: 1.2vh; background: var(--primary); padding: .8vh 1.2vw; border-radius: 99px; font-size: 2.4vh; font-weight: 900; }
+  .dq { color: #ff4d4d; font-weight: 900; font-size: 2.6vh; }
+  .next { font-size: 2vh; opacity: .6; margin-top: 2vh; }
+
+  .tools { position: fixed; top: 10px; right: 12px; display: flex; gap: 8px; z-index: 5; }
+  .tools button { pointer-events: auto; font: inherit; font-size: 13px; padding: 7px 11px; border: 0; border-radius: 8px; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; }
+  .status { position: fixed; bottom: 6px; right: 10px; font-size: 11px; opacity: .45; }
+  .kbhint { position: fixed; top: 92px; right: 30px; font-size: 18px; background: rgba(0,0,0,.6); padding: 8px 14px; border-radius: 10px; }
+  @media (max-aspect-ratio: 4/3) { .lobby { grid-template-columns: 1fr; } .lb { display: none; } .result { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="s-lobby" class="ov dim">
+  <div class="lobby">
+    <div class="head"><img id="logo" class="hidden" alt=""><div><div class="title" id="title">ICHIBAN DRAG RACE</div><div class="sub" id="sub"></div></div></div>
+    <div>
+      <div class="lanes" id="lanes"></div>
+      <div class="wait hidden" id="wait"></div>
+    </div>
+    <div class="lb card"><h2>🏆 Papan Skor</h2><div id="lb"></div></div>
+    <div class="how"><span>1. <b>Scan QR</b> &amp; isi nama</span><span>2. Tunggu lampu <b style="color:#2bff88">HIJAU</b> lalu tap <b>GAS</b></span><span>3. Tap <b>OPER GIGI</b> saat jarum di zona hijau</span></div>
+  </div>
+</div>
+
+<div id="s-over" class="ov dim hidden">
+  <div class="result card">
+    <div>
+      <div class="winner" id="rwinner"></div>
+      <div class="rcols" id="rcols"></div>
+      <div class="next" id="rnext"></div>
+    </div>
+    <div class="lb"><h2>🏆 Papan Skor</h2><div id="lb2"></div></div>
+  </div>
+</div>
+
+<div class="footer" id="footer"></div>
+<div class="kbhint hidden" id="kbhint">Uji coba keyboard: lajur kiri <b>A / Spasi</b> · lajur kanan <b>L / Enter</b></div>
+<div class="tools" id="tools"><button id="soundBtn">🔇 Klik untuk aktifkan suara</button><button id="fsBtn">⛶ Layar penuh</button></div>
+<div class="status" id="status">menghubungkan…</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script src="sim.js"></script>
+<script src="shared.js"></script>
+<script src="race.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const socket = io({ path: location.pathname.replace(/\/[^/]*$/, '') + '/socket.io' });
+  const clock = new Clock(socket);
+  const audio = new DragAudio();
+  const view = window.view = new RaceView($('cv'), audio);
+  let branding = {}, holdTimer = null, waitTimer = null, lastLobby = null, raceTest = false;
+
+  function show(id) {
+    for (const v of ['s-lobby', 's-over']) $(v).classList.toggle('hidden', v !== id);
+    $('footer').classList.toggle('hidden', id !== 's-lobby');
+  }
+  function applyBranding(b) {
+    branding = b;
+    view.setBranding(b);
+    audio.configure(b);
+    const r = document.documentElement.style;
+    r.setProperty('--primary', b.primaryColor); r.setProperty('--accent', b.accentColor);
+    r.setProperty('--l1', b.lane1Color); r.setProperty('--l2', b.lane2Color);
+    $('title').textContent = b.title; $('sub').textContent = b.subtitle; $('footer').textContent = b.footer;
+    document.title = b.title + ' - Layar';
+    $('logo').classList.toggle('hidden', !b.logo); if (b.logo) $('logo').src = b.logo;
+  }
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const f3 = (x) => (x === null || x === undefined ? '-' : Number(x).toFixed(3));
+  function renderLb(el, list, meIds = []) {
+    if (!list.length) { el.innerHTML = '<div class="empty">Belum ada skor. Jadilah yang pertama!</div>'; return; }
+    el.innerHTML = list.map((r) => `<div class="row r${r.rank} ${meIds.includes(r.id) ? 'me' : ''}">
+      <div class="rk">${r.rank}</div><div class="nm">${esc(r.name)}<small>${r.dq ? 'DQ' : `RT ${f3(r.rt)} · ${f3(r.total)} s · ${r.topKmh ?? 0} km/j`}</small></div><div class="sc">${r.score.toLocaleString('id-ID')}</div></div>`).join('');
+  }
+
+  function renderLobby(d) {
+    lastLobby = d;
+    const names = [branding.lane1Name, branding.lane2Name];
+    const cards = d.lanes.map((L, i) => {
+      if (L.stage === 'off') return '';
+      let body;
+      if (L.stage === 'open') body = `<div class="qr"><img src="${L.qr}" alt="QR"></div><div class="st">SCAN &amp; BALAP!<small>${d.lanes.filter((x) => x.stage !== 'off').length > 1 && d.lanes[1 - i].stage !== 'open' ? 'Tantang ' + esc(d.lanes[1 - i].name || 'dia') + '!' : 'Pakai kamera HP'}</small></div><div class="url">${esc(L.url)}</div>`;
+      else if (L.stage === 'form') body = `<div class="ph">📝</div><div class="st">Sedang mendaftar…<small>Isi nama di HP</small></div>`;
+      else if (L.stage === 'joined') body = `<div class="ph">🏍️</div><div class="st"><span class="big">${esc(L.name)}</span><small>Tekan <b>SIAP</b> di HP kamu</small></div>`;
+      else body = `<div class="ph" style="background:rgba(43,255,136,.12)">✅</div><div class="st"><span class="big ok">${esc(L.name)}</span><small>SIAP BALAP!</small></div>`;
+      return `<div class="lane card" style="--lc:${i ? branding.lane2Color : branding.lane1Color}"><h3>${esc(names[i])}</h3>${body}</div>`;
+    }).filter(Boolean);
+    $('lanes').innerHTML = cards.join('<div class="vs">VS</div>');
+    renderLb($('lb'), d.leaderboard);
+    clearInterval(waitTimer);
+    if (d.waitUntil) {
+      const tick = () => {
+        const left = Math.max(0, Math.ceil((d.waitUntil - clock.now()) / 1000));
+        $('wait').textContent = `⏱ Menunggu penantang… balapan mulai dalam ${left} detik`;
+      };
+      tick(); waitTimer = setInterval(tick, 250); $('wait').classList.remove('hidden');
+    } else $('wait').classList.add('hidden');
+  }
+
+  socket.on('connect', () => { $('status').textContent = 'terhubung'; socket.emit('screen:hello'); });
+  socket.on('disconnect', () => { $('status').textContent = 'koneksi terputus, mencoba lagi…'; });
+  socket.on('branding', (b) => { applyBranding(b); if (lastLobby) renderLobby({ ...lastLobby, branding: b }); });
+  socket.on('screen:lobby', (d) => {
+    clearInterval(holdTimer);
+    applyBranding(d.branding);
+    renderLobby(d);
+    if (view.mode !== 'idle') view.startIdle();
+    $('kbhint').classList.add('hidden');
+    show('s-lobby');
+  });
+  socket.on('leaderboard', (lb) => renderLb($('lb'), lb));
+  socket.on('race:start', (info) => {
+    clearInterval(waitTimer); clearInterval(holdTimer);
+    raceTest = info.test;
+    $('kbhint').classList.toggle('hidden', !info.test);
+    show(null);
+    view.startRace(info, clock);
+  });
+  socket.on('race:taps', ({ lane, taps }) => view.setTaps(lane, taps));
+  socket.on('race:result', (r) => {
+    view.showResult(r);
+    setTimeout(() => {
+      const active = r.results.filter(Boolean);
+      const names = [branding.lane1Name, branding.lane2Name];
+      if (active.length === 2) {
+        const w = r.winner !== null ? r.results[r.winner] : null;
+        $('rwinner').innerHTML = w ? `🏆 Pemenang: <span style="color:${w.lane ? branding.lane2Color : branding.lane1Color}">${esc(w.name)}</span>` : 'Tidak ada pemenang';
+        if (w) audio.win(); else audio.lose();
+      } else {
+        const x = active[0];
+        $('rwinner').textContent = x && !x.dq ? (x.rank === 1 ? '🔥 REKOR BARU!' : 'FINISH!') : 'FALSE START!';
+        if (x && !x.dq) audio.win(); else audio.lose();
+      }
+      $('rcols').innerHTML = active.map((x) => `<div class="rc ${r.winner === x.lane ? 'win' : ''}" style="--lc:${x.lane ? branding.lane2Color : branding.lane1Color}">
+        <div class="tag">${esc(names[x.lane])}</div><div class="nm">${esc(x.name)}</div>
+        <div class="pts">${x.score.toLocaleString('id-ID')}<small>poin</small></div>
+        ${x.dq ? '<div class="dq">FALSE START · DISKUALIFIKASI</div>' : `<table>
+          <tr><td>Reaksi</td><td>${x.falseStart ? `<span style="color:#ff4d4d">FALSE START</span>` : x.autoLaunch ? 'telat' : f3(x.rt) + ' s'}</td></tr>
+          <tr><td>Waktu tempuh (ET)</td><td>${f3(x.et)} s</td></tr>
+          <tr><td>Total sampai finish</td><td>${f3(x.total)} s</td></tr>
+          <tr><td>Top speed</td><td>${x.topKmh} km/j</td></tr></table>
+          <div class="chips">${x.shifts.map((s) => `<span class="chip ${s.grade}">${s.gear}: ${({ perfect: 'PERFECT', bagus: 'BAGUS', cepat: 'CEPAT', telat: 'TELAT' })[s.grade]}</span>`).join('')}</div>`}
+        <div class="badge">${x.test ? 'Uji coba' : x.rank ? 'Peringkat #' + x.rank : 'Skor terbaikmu masih lebih tinggi'}</div></div>`).join('');
+      renderLb($('lb2'), r.leaderboard, active.map((x) => x.playId));
+      show('s-over');
+      let left = (r.holdSec || 15);
+      clearInterval(holdTimer);
+      const tick = () => { $('rnext').textContent = `QR untuk peserta berikutnya muncul dalam ${Math.max(0, left)} detik`; left--; };
+      tick(); holdTimer = setInterval(tick, 1000);
+    }, 2200);
+  });
+
+  // Keyboard di TV (hanya untuk balapan uji coba dari admin)
+  addEventListener('keydown', (e) => {
+    if (e.repeat || view.mode !== 'race' || !raceTest) return;
+    const k = e.key.toLowerCase();
+    const lane = k === 'a' || k === ' ' ? 0 : k === 'l' || k === 'enter' ? 1 : -1;
+    if (lane < 0) return;
+    e.preventDefault();
+    socket.emit('kb:tap', { lane, t: clock.now() });
+  });
+
+  function enableSound() { audio.unlock(); audio.playMusic(); audio.crowdOn(view.mode === 'idle' ? 0.25 : 0.7); $('soundBtn').textContent = '🔊 Suara aktif'; }
+  $('soundBtn').onclick = enableSound;
+  $('fsBtn').onclick = () => { enableSound(); document.documentElement.requestFullscreen?.(); };
+  addEventListener('pointerdown', enableSound, { once: true });
+  addEventListener('keydown', enableSound, { once: true });
+  setInterval(() => { $('tools').classList.toggle('hidden', view.mode !== 'idle'); }, 500);
+  // perekam suara (untuk membuat video demo): buka /tv?rec=1
+  if (location.search.includes('rec=1')) window.__startRec = () => { enableSound(); return audio.startRec(); };
+</script>
+</body>
+</html>
